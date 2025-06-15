@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Upload, Clock, BarChart3, X, Calendar as CalendarIcon, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import QuizApp from '@/components/QuizApp';
 import MockExamApp from '@/components/MockExamApp';
 import AnkiCardApp from '@/components/AnkiCardApp';
@@ -11,11 +11,26 @@ import ChatApp from '@/components/ChatApp';
 import UserStatsMenu from '@/components/UserStatsMenu';
 
 const Index = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [examDate] = useState(new Date('2025-07-15'));
   const [progress, setProgress] = useState(65);
   const [timeLeft, setTimeLeft] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isStatsMenuOpen, setIsStatsMenuOpen] = useState(false);
+  const [focusedComponent, setFocusedComponent] = useState<string | null>(null);
+
+  // Handle focus parameter from calendar
+  useEffect(() => {
+    const focus = searchParams.get('focus');
+    if (focus && ['quiz', 'exam', 'flashcards'].includes(focus)) {
+      setFocusedComponent(focus);
+      // Clear the focus parameter after a delay to avoid retriggering
+      setTimeout(() => {
+        setSearchParams(new URLSearchParams());
+        setFocusedComponent(null);
+      }, 1000);
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -103,14 +118,33 @@ const Index = () => {
         {/* Main Apps Grid */}
         <div className="space-y-6">
           {/* Quiz App - Full Width */}
-          <div className="w-full">
-            <QuizApp isEnabled={true} />
+          <div className={`w-full transition-all duration-500 ${
+            focusedComponent === 'quiz' ? 'ring-4 ring-blue-500 ring-opacity-50 shadow-xl' : ''
+          }`}>
+            <QuizApp 
+              isEnabled={true} 
+              autoGenerate={focusedComponent === 'quiz'}
+            />
           </div>
           
           {/* Anki Cards and Mock Exam - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AnkiCardApp isEnabled={true} />
-            <MockExamApp isEnabled={true} />
+            <div className={`transition-all duration-500 ${
+              focusedComponent === 'flashcards' ? 'ring-4 ring-purple-500 ring-opacity-50 shadow-xl' : ''
+            }`}>
+              <AnkiCardApp 
+                isEnabled={true} 
+                autoGenerate={focusedComponent === 'flashcards'}
+              />
+            </div>
+            <div className={`transition-all duration-500 ${
+              focusedComponent === 'exam' ? 'ring-4 ring-orange-500 ring-opacity-50 shadow-xl' : ''
+            }`}>
+              <MockExamApp 
+                isEnabled={true} 
+                autoGenerate={focusedComponent === 'exam'}
+              />
+            </div>
           </div>
         </div>
       </div>

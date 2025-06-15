@@ -11,9 +11,10 @@ import { getMockContentForMaterial } from '@/lib/mockContent';
 
 interface QuizAppProps {
   isEnabled: boolean;
+  autoGenerate?: boolean;
 }
 
-const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
+const QuizApp: React.FC<QuizAppProps> = ({ isEnabled, autoGenerate }) => {
   const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -23,6 +24,13 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
   const [isComplete, setIsComplete] = useState(false);
   const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
   const { generateQuiz, quizState } = useAIGeneration();
+
+  // Auto-generate when component is focused from calendar
+  useEffect(() => {
+    if (autoGenerate && hasAnyMaterials() && !generatedQuiz && !quizState.isLoading) {
+      handleAIQuizGeneration();
+    }
+  }, [autoGenerate, hasAnyMaterials, generatedQuiz, quizState.isLoading]);
 
 
   const handleAIQuizGeneration = async () => {

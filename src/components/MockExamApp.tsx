@@ -11,9 +11,10 @@ import { getMockContentForMaterial } from '@/lib/mockContent';
 
 interface MockExamAppProps {
   isEnabled: boolean;
+  autoGenerate?: boolean;
 }
 
-const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled }) => {
+const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled, autoGenerate }) => {
   const [aiExam, setAiExam] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -24,6 +25,13 @@ const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled }) => {
   const [timeLeft, setTimeLeft] = useState(90 * 60); // 90 minutes in seconds
   const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
   const { generateExam, examState } = useAIGeneration();
+
+  // Auto-generate when component is focused from calendar
+  React.useEffect(() => {
+    if (autoGenerate && hasAnyMaterials() && !aiExam && !examState.isLoading) {
+      handleAIExamGeneration();
+    }
+  }, [autoGenerate, hasAnyMaterials, aiExam, examState.isLoading]);
 
   const handleAIExamGeneration = async () => {
     const materialInfo = getCurrentMaterialInfo();

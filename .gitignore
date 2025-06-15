@@ -7,18 +7,106 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Environment variables - IMPORTANT for AI API keys!
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
 dist
 dist-ssr
+build
 *.local
+
+# Vite specific
+.vite/
+
+# Cache directories
+.cache
+.parcel-cache
+
+# Temporary folders
+tmp/
+temp/
 
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+jest.config.js.map
+
+# Storybook build outputs
+storybook-static
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE files
+*.swp
+*.swo
+*~
+
+# Package manager files (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Generated files
+*.generated.*
+
+# AI/ML model files (if any)
+*.model
+*.pkl
+*.h5
+
+# Misc
+*.tgz
+*.tar.gz

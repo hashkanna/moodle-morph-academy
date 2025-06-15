@@ -1,4 +1,4 @@
-# Moodle Morph Academy
+# Moodle Morph Academy - (Built as part of HuggingFace Agents Hackathon)
 
 An AI-powered educational platform for Material Science courses, built with modern web technologies.
 

@@ -12,6 +12,7 @@ interface MaterialContextType {
   addUploadedFiles: (files: File[]) => void;
   removeUploadedFile: (index: number) => void;
   hasAnyMaterials: () => boolean;
+  getAllMaterials: () => CourseMaterial[];
   getCurrentMaterialInfo: () => {
     material: CourseMaterial | null;
     isUploaded: boolean;
@@ -57,6 +58,10 @@ export const MaterialProvider: React.FC<MaterialProviderProps> = ({ children }) 
     } else {
       const material = getMaterialById(materialId);
       setCurrentMaterialState(material || null);
+      // Also add to selectedMaterials if not already present
+      if (material && !selectedMaterials.includes(materialId)) {
+        setSelectedMaterials(prev => [...prev, materialId]);
+      }
     }
   };
 
@@ -75,6 +80,19 @@ export const MaterialProvider: React.FC<MaterialProviderProps> = ({ children }) 
 
   const hasAnyMaterials = () => {
     return selectedMaterials.length > 0 || uploadedFiles.length > 0;
+  };
+
+  const getAllMaterials = () => {
+    const materials: CourseMaterial[] = [];
+    selectedMaterials.forEach(materialId => {
+      if (!materialId.startsWith('uploaded-')) {
+        const material = getMaterialById(materialId);
+        if (material) {
+          materials.push(material);
+        }
+      }
+    });
+    return materials;
   };
 
   const getCurrentMaterialInfo = () => {
@@ -126,6 +144,7 @@ export const MaterialProvider: React.FC<MaterialProviderProps> = ({ children }) 
     addUploadedFiles,
     removeUploadedFile,
     hasAnyMaterials,
+    getAllMaterials,
     getCurrentMaterialInfo
   };
 

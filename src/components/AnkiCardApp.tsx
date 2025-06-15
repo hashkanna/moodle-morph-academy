@@ -11,15 +11,23 @@ import { getMockContentForMaterial } from '@/lib/mockContent';
 
 interface AnkiCardAppProps {
   isEnabled: boolean;
+  autoGenerate?: boolean;
 }
 
-const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled }) => {
+const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled, autoGenerate }) => {
   const [aiCards, setAiCards] = useState<any[]>([]);
   const [currentCard, setCurrentCard] = useState(0);
   const [showBack, setShowBack] = useState(false);
   const [studyMode, setStudyMode] = useState(false);
   const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
   const { generateFlashcards, flashcardState } = useAIGeneration();
+
+  // Auto-generate when component is focused from calendar
+  React.useEffect(() => {
+    if (autoGenerate && hasAnyMaterials() && aiCards.length === 0 && !flashcardState.isLoading) {
+      handleAIFlashcardGeneration();
+    }
+  }, [autoGenerate, hasAnyMaterials, aiCards.length, flashcardState.isLoading]);
 
   const handleAIFlashcardGeneration = async () => {
     const materialInfo = getCurrentMaterialInfo();

@@ -4,7 +4,7 @@ import { ArrowLeft, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
-import CalendarTodos from '@/components/CalendarTodos';
+import StudyCalendar from '@/components/StudyCalendar';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -115,25 +115,20 @@ const Calendar = () => {
             </div>
             
             <div className="flex space-x-2">
-              {(['day', 'week', 'month'] as const).map((viewType) => (
-                <Button
-                  key={viewType}
-                  variant={view === viewType ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setView(viewType)}
-                  className={view === viewType ? 'bg-[#0f6cbf] hover:bg-[#0d5aa7]' : ''}
-                >
-                  {viewType.charAt(0).toUpperCase() + viewType.slice(1)}
-                </Button>
-              ))}
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-[#0f6cbf] hover:bg-[#0d5aa7]"
+              >
+                Week View
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Calendar with Todos */}
-        <CalendarTodos 
+        {/* Study Calendar */}
+        <StudyCalendar 
           currentDate={currentDate}
-          view={view}
           onDateChange={setCurrentDate}
           onProgressUpdate={handleProgressUpdate}
         />
