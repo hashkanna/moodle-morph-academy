@@ -93,7 +93,7 @@ export const useAIGeneration = (): UseAIGenerationReturn => {
 
       // Step 4: Generate quiz using AI
       const quiz = await aiService.generateQuiz(sourceText, {
-        questionCount: options.questionCount || 5,
+        questionCount: options.questionCount || 10,
         difficulty: options.difficulty || 'mixed',
         language: material.language || 'en'
       });
@@ -161,7 +161,7 @@ export const useAIGeneration = (): UseAIGenerationReturn => {
 
       // Step 4: Generate flashcards
       const flashcards = await aiService.generateFlashcards(sourceText, {
-        cardCount: options.cardCount || 10,
+        cardCount: options.cardCount || 15,
         language: options.language || material.language || 'de'
       });
 
@@ -239,7 +239,7 @@ export const useAIGeneration = (): UseAIGenerationReturn => {
 
       // Step 5: Generate exam
       const exam = await aiService.generateExam(sourceText, {
-        questionCount: options.questionCount || 8,
+        questionCount: options.questionCount || 12,
         duration: options.duration || 90,
         includeEssay: true,
         includeCalculations: true,

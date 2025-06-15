@@ -14,10 +14,14 @@ interface MockExamAppProps {
 }
 
 const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled }) => {
-  const [animationStep, setAnimationStep] = useState(0);
-  const [mockProgress, setMockProgress] = useState(0);
-  const [useAI, setUseAI] = useState(false);
   const [aiExam, setAiExam] = useState<any>(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [showResult, setShowResult] = useState(false);
+  const [score, setScore] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(90 * 60); // 90 minutes in seconds
   const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
   const { generateExam, examState } = useAIGeneration();
 
@@ -27,123 +31,224 @@ const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled }) => {
 
     try {
       const result = await generateExam(materialInfo.material.id, {
-        questionCount: 8,
+        questionCount: 12,
         duration: 90
       });
       
       if (result) {
         setAiExam(result);
+        setCurrentQuestion(0);
+        setSelectedAnswer(null);
+        setAnswers(new Array(result.questions.length).fill(null));
+        setScore(0);
+        setShowResult(false);
+        setIsComplete(false);
+        setTimeLeft(90 * 60);
       }
     } catch (error) {
       console.error('Failed to generate AI exam:', error);
     }
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimationStep(prev => (prev + 1) % 4);
-      if (animationStep === 2) {
-        setMockProgress(prev => (prev >= 100 ? 0 : prev + 20));
+  const handleAnswerSelect = (answerIndex: number) => {
+    setSelectedAnswer(answerIndex);
+    const newAnswers = [...answers];
+    newAnswers[currentQuestion] = answerIndex;
+    setAnswers(newAnswers);
+  };
+
+  const handleNext = () => {
+    if (selectedAnswer !== null && aiExam) {
+      setShowResult(true);
+      
+      if (selectedAnswer === aiExam.questions[currentQuestion].correctAnswer) {
+        setScore(prev => prev + 1);
       }
-    }, 1500);
-    return () => clearInterval(interval);
-  }, [animationStep]);
 
-  const getAnimationContent = () => {
-    const materialInfo = getCurrentMaterialInfo();
-    
-    // Show AI generation progress if AI is being used
-    if (useAI && examState.isLoading) {
-      return (
-        <div className="space-y-3 flex flex-col justify-center h-full">
-          <div className="flex items-center space-x-2 text-orange-600">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-sm">{examState.stage}</span>
-          </div>
-          <Progress value={examState.progress} className="h-2" />
-          <div className="text-xs text-gray-500 text-center">
-            AI creating comprehensive exam...
-          </div>
-        </div>
-      );
-    }
-
-    if (useAI && examState.error) {
-      return (
-        <div className="text-center space-y-2 flex flex-col justify-center h-full">
-          <XCircle className="h-8 w-8 text-red-500 mx-auto" />
-          <div className="text-sm text-red-600">AI Generation Failed</div>
-          <div className="text-xs text-gray-500">{examState.error}</div>
-        </div>
-      );
-    }
-
-    if (useAI && examState.progress === 100) {
-      return (
-        <div className="text-center">
-          <Award className="h-8 w-8 text-green-500 mx-auto mb-2 animate-bounce" />
-          <div className="text-sm font-medium text-green-600">
-            AI Exam Generated Successfully!
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            {aiExam?.questions?.length || 8} questions • 90 minutes
-          </div>
-        </div>
-      );
-    }
-
-    // Default mock animation
-    switch (animationStep) {
-      case 0:
-        return (
-          <div className="text-center">
-            <Clock className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-            <div className="text-sm font-medium">Setting up exam environment</div>
-            <div className="text-xs text-gray-500 mt-1">90 minutes • Questions from {materialInfo.material?.title || 'selected material'}</div>
-          </div>
-        );
-      case 1:
-        return (
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Question 1/?</span>
-              <span className="text-xs text-gray-500">Time: 89:45</span>
-            </div>
-            <div className="bg-white p-3 rounded border">
-              <div className="text-xs mb-2">Multiple Choice</div>
-              <div className="text-sm">Material-specific question will appear here...</div>
-              <div className="mt-2 space-y-1 text-xs">
-                <div className="p-1 bg-blue-100 rounded">A) Option A</div>
-                <div className="p-1 hover:bg-gray-100 rounded">B) Option B</div>
-                <div className="p-1 hover:bg-gray-100 rounded">C) Option C</div>
-              </div>
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-3">
-            <div className="text-sm font-medium text-center">Exam in Progress</div>
-            <Progress value={mockProgress} className="h-2" />
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Questions: {Math.floor(mockProgress/2)}/?</span>
-              <span>Time: {90 - Math.floor(mockProgress/2)}:00</span>
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="text-center">
-            <Award className="h-8 w-8 text-green-500 mx-auto mb-2 animate-pulse" />
-            <div className="text-sm font-medium text-green-600">Exam Complete!</div>
-            <div className="text-xs text-gray-500 mt-1">Score: 85% • Grade: B+ • Material-based exam</div>
-          </div>
-        );
-      default:
-        return null;
+      setTimeout(() => {
+        if (currentQuestion < aiExam.questions.length - 1) {
+          setCurrentQuestion(prev => prev + 1);
+          setSelectedAnswer(null);
+          setShowResult(false);
+        } else {
+          setIsComplete(true);
+        }
+      }, 2000);
     }
   };
 
+  const resetExam = () => {
+    setAiExam(null);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setAnswers([]);
+    setScore(0);
+    setShowResult(false);
+    setIsComplete(false);
+    setTimeLeft(90 * 60);
+  };
+
+  // Timer effect
+  React.useEffect(() => {
+    if (aiExam && !isComplete && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setIsComplete(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [aiExam, isComplete, timeLeft]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+
+  // Show exam completion screen
+  if (isComplete && aiExam) {
+    const percentage = Math.round((score / aiExam.questions.length) * 100);
+    return (
+      <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-[#0f6cbf]">
+            <Award className="h-6 w-6 mr-2" />
+            Exam Complete!
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center space-y-6">
+            <div className="text-6xl">
+              {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-[#0f6cbf]">{percentage}%</div>
+              <div className="text-gray-600">
+                You got {score} out of {aiExam.questions.length} questions correct
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Button 
+                onClick={resetExam}
+                className="bg-[#0f6cbf] hover:bg-[#0d5aa7] mr-4"
+              >
+                Generate New Exam
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show active exam
+  if (aiExam && aiExam.questions) {
+    const currentQ = aiExam.questions[currentQuestion];
+    const progress = ((currentQuestion + (showResult ? 1 : 0)) / aiExam.questions.length) * 100;
+
+    return (
+      <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-[#0f6cbf]">
+            <Target className="h-6 w-6 mr-2" />
+            AI Generated Exam
+          </CardTitle>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm text-gray-600">
+              Question {currentQuestion + 1} of {aiExam.questions.length}
+            </span>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-orange-600">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm font-mono">{formatTime(timeLeft)}</span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={resetExam}
+              >
+                Exit Exam
+              </Button>
+            </div>
+          </div>
+          <Progress value={progress} className="h-2 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="text-lg font-medium">
+              {currentQ.question}
+            </div>
+            
+            <div className="space-y-2">
+              {currentQ.options.map((option: string, index: number) => {
+                let buttonClass = "w-full text-left p-4 border rounded-lg transition-all duration-200 ";
+                
+                if (showResult) {
+                  if (index === currentQ.correctAnswer) {
+                    buttonClass += "border-green-500 bg-green-50 text-green-800";
+                  } else if (index === selectedAnswer && index !== currentQ.correctAnswer) {
+                    buttonClass += "border-red-500 bg-red-50 text-red-800";
+                  } else {
+                    buttonClass += "border-gray-200 bg-gray-50 text-gray-600";
+                  }
+                } else {
+                  if (selectedAnswer === index) {
+                    buttonClass += "border-[#0f6cbf] bg-[#0f6cbf]/10 text-[#0f6cbf]";
+                  } else {
+                    buttonClass += "border-gray-200 hover:border-[#0f6cbf] hover:bg-[#0f6cbf]/5";
+                  }
+                }
+
+                return (
+                  <button
+                    key={index}
+                    className={buttonClass}
+                    onClick={() => !showResult && handleAnswerSelect(index)}
+                    disabled={showResult}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{option}</span>
+                      {showResult && index === currentQ.correctAnswer && (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      )}
+                      {showResult && index === selectedAnswer && index !== currentQ.correctAnswer && (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {showResult && currentQ.explanation && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">Explanation:</h4>
+                <p className="text-blue-700">{currentQ.explanation}</p>
+              </div>
+            )}
+
+            {!showResult && (
+              <Button
+                onClick={handleNext}
+                disabled={selectedAnswer === null}
+                className="w-full bg-[#0f6cbf] hover:bg-[#0d5aa7] mt-6"
+              >
+                {currentQuestion < aiExam.questions.length - 1 ? 'Next Question' : 'Finish Exam'}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show exam generator interface
   return (
     <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
       <CardHeader className="pb-4">
@@ -187,54 +292,73 @@ const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled }) => {
             );
           })()}
 
-          {/* Animation Demo */}
+          {/* AI Status Display */}
           <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-200 min-h-[120px] flex items-center justify-center">
-            {getAnimationContent()}
+            {examState.isLoading ? (
+              <div className="space-y-3 text-center">
+                <div className="flex items-center space-x-2 text-orange-600 justify-center">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span className="text-sm">{examState.stage}</span>
+                </div>
+                <Progress value={examState.progress} className="h-2" />
+                <div className="text-xs text-gray-500">
+                  AI creating comprehensive exam...
+                </div>
+              </div>
+            ) : examState.error ? (
+              <div className="text-center space-y-2">
+                <XCircle className="h-8 w-8 text-red-500 mx-auto" />
+                <div className="text-sm text-red-600">AI Generation Failed</div>
+                <div className="text-xs text-gray-500">{examState.error}</div>
+              </div>
+            ) : aiExam ? (
+              <div className="text-center space-y-2">
+                <Award className="h-8 w-8 text-green-500 mx-auto animate-bounce" />
+                <div className="text-sm text-green-600 font-medium">
+                  AI Exam Generated Successfully!
+                </div>
+                <div className="text-xs text-gray-500">
+                  {aiExam.questions?.length || 12} questions • 90 minutes
+                </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-3">
+                <Target className="h-12 w-12 text-orange-600 mx-auto" />
+                <div className="text-sm font-medium text-gray-700">
+                  Ready to generate AI exam
+                </div>
+                <div className="text-xs text-gray-500">
+                  Comprehensive timed examination
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-orange-500" />
-              <span>{useAI ? 'AI-generated timed exam' : 'Timed exam simulation'}</span>
+              <Brain className="h-4 w-4 text-orange-500" />
+              <span>AI-generated comprehensive exam</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Target className="h-4 w-4 text-orange-500" />
-              <span>Real exam conditions</span>
+              <Clock className="h-4 w-4 text-orange-500" />
+              <span>90-minute timed session</span>
             </div>
             <div className="flex items-center space-x-2">
               <Award className="h-4 w-4 text-orange-500" />
-              <span>Detailed performance analysis</span>
+              <span>12 questions with detailed analysis</span>
             </div>
-          </div>
-
-          {/* AI Toggle */}
-          <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Brain className="h-4 w-4 text-orange-600" />
-              <span className="text-sm font-medium text-orange-800">
-                AI Generation
-              </span>
-            </div>
-            <Button
-              variant={useAI ? "default" : "outline"}
-              size="sm"
-              onClick={() => setUseAI(!useAI)}
-              className={useAI ? "bg-orange-600 hover:bg-orange-700" : ""}
-            >
-              {useAI ? 'AI Mode' : 'Demo Mode'}
-            </Button>
           </div>
           
           <Button 
             className="w-full bg-[#0f6cbf] hover:bg-[#0d5aa7]" 
-            disabled={!hasAnyMaterials() || (useAI && examState.isLoading)}
-            onClick={useAI ? handleAIExamGeneration : undefined}
+            disabled={!hasAnyMaterials() || examState.isLoading}
+            onClick={handleAIExamGeneration}
           >
             {!hasAnyMaterials() 
               ? 'Select Material to Enable'
-              : useAI 
-                ? (examState.isLoading ? 'Generating...' : 'Generate AI Exam')
-                : 'Start Mock Exam'
+              : examState.isLoading 
+                ? 'Generating AI Exam...' 
+                : 'Generate AI Exam'
             }
           </Button>
         </div>

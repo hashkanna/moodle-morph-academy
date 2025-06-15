@@ -104,25 +104,13 @@ const Index = () => {
         <div className="space-y-6">
           {/* Quiz App - Full Width */}
           <div className="w-full">
-            <Link to="/quiz">
-              <div className="cursor-pointer transform hover:scale-[1.02] transition-transform duration-200">
-                <QuizApp />
-              </div>
-            </Link>
+            <QuizApp isEnabled={true} />
           </div>
           
           {/* Anki Cards and Mock Exam - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Link to="/anki-cards">
-              <div className="cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 h-full">
-                <AnkiCardApp />
-              </div>
-            </Link>
-            <Link to="/mock-exam">
-              <div className="cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 h-full">
-                <MockExamApp />
-              </div>
-            </Link>
+            <AnkiCardApp isEnabled={true} />
+            <MockExamApp isEnabled={true} />
           </div>
         </div>
       </div>
@@ -169,7 +157,7 @@ const Index = () => {
               </div>
               
               <div className="flex-1">
-                <ChatApp />
+                <ChatApp isEnabled={true} />
               </div>
             </div>
           </div>

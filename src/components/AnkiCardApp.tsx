@@ -14,53 +14,160 @@ interface AnkiCardAppProps {
 }
 
 const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled }) => {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [cardIndex, setCardIndex] = useState(0);
-  const [useAI, setUseAI] = useState(false);
   const [aiCards, setAiCards] = useState<any[]>([]);
+  const [currentCard, setCurrentCard] = useState(0);
+  const [showBack, setShowBack] = useState(false);
+  const [studyMode, setStudyMode] = useState(false);
   const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
   const { generateFlashcards, flashcardState } = useAIGeneration();
 
-  const materialInfo = getCurrentMaterialInfo();
-  const materialId = materialInfo.material?.id || 'default';
-  const mockContent = getMockContentForMaterial(materialId);
-  const sampleCards = useAI && aiCards.length > 0 ? aiCards : mockContent.ankiCards;
-
   const handleAIFlashcardGeneration = async () => {
+    const materialInfo = getCurrentMaterialInfo();
     if (!materialInfo.material) return;
 
     try {
       const result = await generateFlashcards(materialInfo.material.id, {
-        cardCount: 10,
+        cardCount: 15,
         language: 'de'
       });
       
       if (result) {
         setAiCards(result.cards);
-        setCardIndex(0);
-        setIsFlipped(false);
+        setCurrentCard(0);
+        setShowBack(false);
+        setStudyMode(false);
       }
     } catch (error) {
       console.error('Failed to generate AI flashcards:', error);
     }
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (isFlipped) {
-        setTimeout(() => {
-          setIsFlipped(false);
-          setCardIndex(prev => (prev + 1) % sampleCards.length);
-        }, 1000);
-      } else {
-        setIsFlipped(true);
-      }
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [isFlipped, sampleCards.length]);
+  const startStudying = () => {
+    setStudyMode(true);
+    setCurrentCard(0);
+    setShowBack(false);
+  };
 
-  const currentCard = sampleCards[cardIndex];
+  const nextCard = () => {
+    if (currentCard < aiCards.length - 1) {
+      setCurrentCard(prev => prev + 1);
+      setShowBack(false);
+    } else {
+      setStudyMode(false);
+      setCurrentCard(0);
+    }
+  };
 
+  const prevCard = () => {
+    if (currentCard > 0) {
+      setCurrentCard(prev => prev - 1);
+      setShowBack(false);
+    }
+  };
+
+  const flipCard = () => {
+    setShowBack(!showBack);
+  };
+
+  const resetCards = () => {
+    setAiCards([]);
+    setCurrentCard(0);
+    setShowBack(false);
+    setStudyMode(false);
+  };
+
+  // Show study mode
+  if (studyMode && aiCards.length > 0) {
+    const currentCardData = aiCards[currentCard];
+    const progress = ((currentCard + 1) / aiCards.length) * 100;
+
+    return (
+      <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-[#0f6cbf]">
+            <BookOpen className="h-6 w-6 mr-2" />
+            Studying Flashcards
+          </CardTitle>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm text-gray-600">
+              Card {currentCard + 1} of {aiCards.length}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setStudyMode(false)}
+            >
+              Exit Study
+            </Button>
+          </div>
+          <Progress value={progress} className="h-2 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Flashcard */}
+            <div 
+              className={`min-h-[200px] bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${showBack ? 'transform scale-105' : ''}`}
+              onClick={flipCard}
+            >
+              <div className="text-center space-y-4">
+                <div className="text-xs uppercase tracking-wide text-purple-600 font-semibold">
+                  {showBack ? 'Back' : 'Front'} • {currentCardData.difficulty}
+                </div>
+                <div className="text-lg font-medium text-gray-800">
+                  {showBack ? currentCardData.back : currentCardData.front}
+                </div>
+                {!showBack && (
+                  <div className="text-xs text-gray-500">
+                    Click to reveal answer
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex justify-between items-center">
+              <Button
+                variant="outline"
+                onClick={prevCard}
+                disabled={currentCard === 0}
+                className="flex items-center space-x-2"
+              >
+                <span>← Previous</span>
+              </Button>
+              
+              <Button
+                onClick={flipCard}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <RotateCw className="h-4 w-4 mr-2" />
+                {showBack ? 'Show Front' : 'Flip Card'}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={nextCard}
+                disabled={currentCard === aiCards.length - 1}
+                className="flex items-center space-x-2"
+              >
+                <span>{currentCard === aiCards.length - 1 ? 'Finish' : 'Next →'}</span>
+              </Button>
+            </div>
+
+            {/* Card Info */}
+            {showBack && (
+              <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="text-xs text-purple-700">
+                  Category: {currentCardData.category} • Difficulty: {currentCardData.difficulty}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show flashcard list/generator interface
   return (
     <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
       <CardHeader className="pb-4">
@@ -104,51 +211,55 @@ const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled }) => {
             );
           })()}
 
-          {/* Card Demo or AI Generation Progress */}
-          <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-200 min-h-[120px]">
-            {useAI && flashcardState.isLoading ? (
-              <div className="space-y-3 flex flex-col justify-center h-full">
-                <div className="flex items-center space-x-2 text-blue-600">
+          {/* AI Generation Status or Cards List */}
+          <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-200 min-h-[120px] flex items-center justify-center">
+            {flashcardState.isLoading ? (
+              <div className="space-y-3 text-center">
+                <div className="flex items-center space-x-2 text-purple-600 justify-center">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   <span className="text-sm">{flashcardState.stage}</span>
                 </div>
                 <Progress value={flashcardState.progress} className="h-2" />
-                <div className="text-xs text-gray-500 text-center">
+                <div className="text-xs text-gray-500">
                   AI creating German flashcards...
                 </div>
               </div>
-            ) : useAI && flashcardState.error ? (
-              <div className="text-center space-y-2 flex flex-col justify-center h-full">
+            ) : flashcardState.error ? (
+              <div className="text-center space-y-2">
                 <XCircle className="h-8 w-8 text-red-500 mx-auto" />
                 <div className="text-sm text-red-600">AI Generation Failed</div>
                 <div className="text-xs text-gray-500">{flashcardState.error}</div>
               </div>
-            ) : (
-              <div 
-                className={`relative w-full h-full min-h-[88px] transition-transform duration-500 transform-style-preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                {/* Front of card */}
-                <div className={`absolute inset-0 bg-white border rounded-lg p-4 flex items-center justify-center shadow-md ${isFlipped ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}>
-                  <div className="text-center">
-                    <div className="text-sm text-gray-500 mb-1">
-                      {useAI && aiCards.length > 0 ? 'AI Generated Term' : 'Term'}
-                    </div>
-                    <div className="text-lg font-semibold text-[#0f6cbf]">{currentCard?.front}</div>
-                    <RotateCw className="h-4 w-4 text-gray-400 mx-auto mt-2 animate-spin" />
+            ) : aiCards.length > 0 ? (
+              <div className="w-full space-y-3">
+                <div className="text-center space-y-2">
+                  <CheckCircle className="h-8 w-8 text-green-500 mx-auto" />
+                  <div className="text-sm text-green-600 font-medium">
+                    {aiCards.length} AI Flashcards Generated!
                   </div>
                 </div>
-                
-                {/* Back of card */}
-                <div className={`absolute inset-0 bg-blue-50 border rounded-lg p-4 flex items-center justify-center shadow-md ${isFlipped ? 'opacity-100' : 'opacity-0'} transition-opacity duration-300`}>
-                  <div className="text-center">
-                    <div className="text-sm text-gray-500 mb-1">Definition</div>
-                    <div className="text-sm text-gray-700">{currentCard?.back}</div>
-                    <div className="flex justify-center space-x-3 mt-3">
-                      <CheckCircle className="h-5 w-5 text-green-500 animate-pulse" />
-                      <XCircle className="h-5 w-5 text-red-500" />
+                <div className="grid grid-cols-1 gap-2 max-h-32 overflow-y-auto">
+                  {aiCards.slice(0, 3).map((card, index) => (
+                    <div key={index} className="text-xs p-2 bg-white rounded border">
+                      <div className="font-medium text-purple-700">{card.front}</div>
+                      <div className="text-gray-600 truncate">{card.back}</div>
                     </div>
-                  </div>
+                  ))}
+                  {aiCards.length > 3 && (
+                    <div className="text-xs text-center text-gray-500">
+                      +{aiCards.length - 3} more cards
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center space-y-3">
+                <BookOpen className="h-12 w-12 text-purple-600 mx-auto" />
+                <div className="text-sm font-medium text-gray-700">
+                  Ready to generate AI flashcards
+                </div>
+                <div className="text-xs text-gray-500">
+                  German language flashcards from your material
                 </div>
               </div>
             )}
@@ -156,8 +267,8 @@ const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled }) => {
           
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center space-x-2">
-              <BookOpen className="h-4 w-4 text-purple-500" />
-              <span>{useAI && aiCards.length > 0 ? 'AI generated from' : 'Generated from'} {materialInfo.material?.title || 'your material'}</span>
+              <Brain className="h-4 w-4 text-purple-500" />
+              <span>AI-generated German flashcards</span>
             </div>
             <div className="flex items-center space-x-2">
               <RotateCw className="h-4 w-4 text-purple-500" />
@@ -165,40 +276,41 @@ const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled }) => {
             </div>
             <div className="flex items-center space-x-2">
               <CheckCircle className="h-4 w-4 text-purple-500" />
-              <span>{sampleCards.length} cards available</span>
+              <span>15 cards per generation</span>
             </div>
-          </div>
-
-          {/* AI Toggle */}
-          <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Brain className="h-4 w-4 text-purple-600" />
-              <span className="text-sm font-medium text-purple-800">
-                AI Generation
-              </span>
-            </div>
-            <Button
-              variant={useAI ? "default" : "outline"}
-              size="sm"
-              onClick={() => setUseAI(!useAI)}
-              className={useAI ? "bg-purple-600 hover:bg-purple-700" : ""}
-            >
-              {useAI ? 'AI Mode' : 'Demo Mode'}
-            </Button>
           </div>
           
-          <Button 
-            className="w-full bg-[#0f6cbf] hover:bg-[#0d5aa7]" 
-            disabled={!hasAnyMaterials() || (useAI && flashcardState.isLoading)}
-            onClick={useAI ? handleAIFlashcardGeneration : undefined}
-          >
-            {!hasAnyMaterials() 
-              ? 'Select Material to Enable'
-              : useAI 
-                ? (flashcardState.isLoading ? 'Generating...' : 'Generate AI Cards')
-                : 'Study Cards'
-            }
-          </Button>
+          {aiCards.length > 0 ? (
+            <div className="space-y-2">
+              <Button 
+                className="w-full bg-purple-600 hover:bg-purple-700" 
+                onClick={startStudying}
+              >
+                <BookOpen className="h-4 w-4 mr-2" />
+                Start Studying ({aiCards.length} cards)
+              </Button>
+              <Button 
+                variant="outline"
+                className="w-full" 
+                onClick={resetCards}
+              >
+                Generate New Cards
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              className="w-full bg-[#0f6cbf] hover:bg-[#0d5aa7]" 
+              disabled={!hasAnyMaterials() || flashcardState.isLoading}
+              onClick={handleAIFlashcardGeneration}
+            >
+              {!hasAnyMaterials() 
+                ? 'Select Material to Enable'
+                : flashcardState.isLoading 
+                  ? 'Generating AI Cards...' 
+                  : 'Generate AI Cards'
+              }
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { FileText, Play, CheckCircle, XCircle, Brain, Loader2 } from 'lucide-react';
+import { FileText, Play, CheckCircle, XCircle, Brain, Loader2, Award, RotateCcw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,37 +14,91 @@ interface QuizAppProps {
 }
 
 const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
-  const [animationStep, setAnimationStep] = useState(0);
-  const [useAI, setUseAI] = useState(false);
+  const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [showResult, setShowResult] = useState(false);
+  const [score, setScore] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
   const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
   const { generateQuiz, quizState } = useAIGeneration();
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setAnimationStep(prev => (prev + 1) % 4);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleAIQuizGeneration = async () => {
+    console.log('🚀 AI Quiz Generation clicked!');
     const materialInfo = getCurrentMaterialInfo();
-    if (!materialInfo.material) return;
+    console.log('📝 Material info:', materialInfo);
+    
+    if (!materialInfo.material) {
+      console.log('❌ No material selected!');
+      return;
+    }
 
     try {
-      await generateQuiz(materialInfo.material.id, {
-        questionCount: 5,
+      console.log('🎯 Generating quiz for material:', materialInfo.material.id);
+      const result = await generateQuiz(materialInfo.material.id, {
+        questionCount: 10,
         difficulty: 'mixed'
       });
+      
+      if (result) {
+        console.log('✅ Quiz generated, showing questions:', result);
+        setGeneratedQuiz(result);
+        setCurrentQuestion(0);
+        setSelectedAnswer(null);
+        setAnswers(new Array(result.questions.length).fill(null));
+        setScore(0);
+        setShowResult(false);
+        setIsComplete(false);
+      }
     } catch (error) {
-      console.error('Failed to generate AI quiz:', error);
+      console.error('❌ Failed to generate AI quiz:', error);
     }
   };
 
-  const getAnimationContent = () => {
+  const handleAnswerSelect = (answerIndex: number) => {
+    setSelectedAnswer(answerIndex);
+    const newAnswers = [...answers];
+    newAnswers[currentQuestion] = answerIndex;
+    setAnswers(newAnswers);
+  };
+
+  const handleNext = () => {
+    if (selectedAnswer !== null && generatedQuiz) {
+      setShowResult(true);
+      
+      if (selectedAnswer === generatedQuiz.questions[currentQuestion].correctAnswer) {
+        setScore(prev => prev + 1);
+      }
+
+      setTimeout(() => {
+        if (currentQuestion < generatedQuiz.questions.length - 1) {
+          setCurrentQuestion(prev => prev + 1);
+          setSelectedAnswer(null);
+          setShowResult(false);
+        } else {
+          setIsComplete(true);
+        }
+      }, 2000);
+    }
+  };
+
+  const resetQuiz = () => {
+    setGeneratedQuiz(null);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setAnswers([]);
+    setScore(0);
+    setShowResult(false);
+    setIsComplete(false);
+  };
+
+  const getStatusContent = () => {
     const materialInfo = getCurrentMaterialInfo();
     
-    // Show AI generation progress if AI is being used
-    if (useAI && quizState.isLoading) {
+    // Show AI generation progress
+    if (quizState.isLoading) {
       return (
         <div className="space-y-3">
           <div className="flex items-center space-x-2 text-blue-600">
@@ -59,7 +113,7 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
       );
     }
 
-    if (useAI && quizState.error) {
+    if (quizState.error) {
       return (
         <div className="text-center space-y-2">
           <XCircle className="h-8 w-8 text-red-500 mx-auto" />
@@ -73,7 +127,7 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
       );
     }
 
-    if (useAI && quizState.progress === 100) {
+    if (quizState.progress === 100) {
       return (
         <div className="text-center">
           <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2 animate-bounce" />
@@ -84,57 +138,156 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
       );
     }
 
-    // Default mock animation
-    const materialId = materialInfo.material?.id || 'default';
-    const mockContent = getMockContentForMaterial(materialId);
-    const sampleQuestion = mockContent.quizQuestions[0];
-
-    switch (animationStep) {
-      case 0:
-        return (
-          <div className="flex items-center space-x-2 text-blue-600">
-            <FileText className="h-5 w-5 animate-pulse" />
-            <span className="text-sm">Analyzing {materialInfo.material?.title || 'material'} content...</span>
-          </div>
-        );
-      case 1:
-        return (
-          <div className="flex items-center space-x-2 text-orange-600">
-            <Brain className="h-5 w-5 animate-spin" />
-            <span className="text-sm">Generating questions from material...</span>
-          </div>
-        );
-      case 2:
-        return (
-          <div className="space-y-2">
-            <div className="text-sm font-medium">Sample Question:</div>
-            <div className="text-xs bg-gray-100 p-2 rounded">
-              "{sampleQuestion.question}"
-              <div className="mt-1 space-y-1">
-                {sampleQuestion.options.slice(0, 2).map((option, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <CheckCircle className={`h-3 w-3 ${index === sampleQuestion.correctAnswer ? 'text-green-500' : 'text-gray-400'}`} />
-                    <span className={index === sampleQuestion.correctAnswer ? 'font-medium' : ''}>{option}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
-      case 3:
-        return (
-          <div className="text-center">
-            <CheckCircle className="h-8 w-8 text-green-500 mx-auto mb-2 animate-bounce" />
-            <span className="text-sm text-green-600 font-medium">
-              Quiz Ready! {mockContent.quizQuestions.length} questions generated
-            </span>
-          </div>
-        );
-      default:
-        return null;
-    }
+    // Default state - ready to generate
+    return (
+      <div className="text-center space-y-3">
+        <Brain className="h-12 w-12 text-blue-600 mx-auto" />
+        <div className="text-sm font-medium text-gray-700">
+          Ready to generate AI-powered quiz
+        </div>
+        <div className="text-xs text-gray-500">
+          {materialInfo.material ? 
+            `From: ${materialInfo.material.title}` : 
+            'Select a material to get started'
+          }
+        </div>
+      </div>
+    );
   };
 
+  // Show quiz completion screen
+  if (isComplete && generatedQuiz) {
+    const percentage = Math.round((score / generatedQuiz.questions.length) * 100);
+    return (
+      <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-[#0f6cbf]">
+            <Award className="h-6 w-6 mr-2" />
+            Quiz Complete!
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center space-y-6">
+            <div className="text-6xl">
+              {percentage >= 80 ? '🎉' : percentage >= 60 ? '👍' : '📚'}
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-[#0f6cbf]">{percentage}%</div>
+              <div className="text-gray-600">
+                You got {score} out of {generatedQuiz.questions.length} questions correct
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Button 
+                onClick={resetQuiz}
+                className="bg-[#0f6cbf] hover:bg-[#0d5aa7] mr-4"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Generate New Quiz
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show active quiz
+  if (generatedQuiz && generatedQuiz.questions) {
+    const currentQ = generatedQuiz.questions[currentQuestion];
+    const progress = ((currentQuestion + (showResult ? 1 : 0)) / generatedQuiz.questions.length) * 100;
+
+    return (
+      <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center text-[#0f6cbf]">
+            <FileText className="h-6 w-6 mr-2" />
+            AI Generated Quiz
+          </CardTitle>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-sm text-gray-600">
+              Question {currentQuestion + 1} of {generatedQuiz.questions.length}
+            </span>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resetQuiz}
+            >
+              Exit Quiz
+            </Button>
+          </div>
+          <Progress value={progress} className="h-2 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="text-lg font-medium">
+              {currentQ.question}
+            </div>
+            
+            <div className="space-y-2">
+              {currentQ.options.map((option: string, index: number) => {
+                let buttonClass = "w-full text-left p-4 border rounded-lg transition-all duration-200 ";
+                
+                if (showResult) {
+                  if (index === currentQ.correctAnswer) {
+                    buttonClass += "border-green-500 bg-green-50 text-green-800";
+                  } else if (index === selectedAnswer && index !== currentQ.correctAnswer) {
+                    buttonClass += "border-red-500 bg-red-50 text-red-800";
+                  } else {
+                    buttonClass += "border-gray-200 bg-gray-50 text-gray-600";
+                  }
+                } else {
+                  if (selectedAnswer === index) {
+                    buttonClass += "border-[#0f6cbf] bg-[#0f6cbf]/10 text-[#0f6cbf]";
+                  } else {
+                    buttonClass += "border-gray-200 hover:border-[#0f6cbf] hover:bg-[#0f6cbf]/5";
+                  }
+                }
+
+                return (
+                  <button
+                    key={index}
+                    className={buttonClass}
+                    onClick={() => !showResult && handleAnswerSelect(index)}
+                    disabled={showResult}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span>{option}</span>
+                      {showResult && index === currentQ.correctAnswer && (
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                      )}
+                      {showResult && index === selectedAnswer && index !== currentQ.correctAnswer && (
+                        <XCircle className="h-5 w-5 text-red-600" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {showResult && currentQ.explanation && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h4 className="font-semibold text-blue-800 mb-2">Explanation:</h4>
+                <p className="text-blue-700">{currentQ.explanation}</p>
+              </div>
+            )}
+
+            {!showResult && (
+              <Button
+                onClick={handleNext}
+                disabled={selectedAnswer === null}
+                className="w-full bg-[#0f6cbf] hover:bg-[#0d5aa7] mt-6"
+              >
+                {currentQuestion < generatedQuiz.questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show quiz generator interface
   return (
     <Card className={`transition-all duration-300 ${isEnabled ? 'border-[#0f6cbf] shadow-lg' : 'border-gray-200 opacity-60'}`}>
       <CardHeader className="pb-4">
@@ -178,54 +331,36 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled }) => {
             );
           })()}
 
-          {/* Animation Demo */}
+          {/* AI Status Display */}
           <div className="bg-gray-50 p-4 rounded-lg border-2 border-dashed border-gray-200 min-h-[120px] flex items-center justify-center">
-            {getAnimationContent()}
+            {getStatusContent()}
           </div>
           
           <div className="space-y-2 text-sm text-gray-600">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span>{useAI ? 'Real AI-powered question generation' : 'Sample questions from course content'}</span>
+              <Brain className="h-4 w-4 text-blue-500" />
+              <span>AI-powered question generation</span>
             </div>
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span>Multiple choice & explanations</span>
+              <CheckCircle className="h-4 w-4 text-blue-500" />
+              <span>10 unique questions per session</span>
             </div>
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span>Instant feedback & scoring</span>
+              <CheckCircle className="h-4 w-4 text-blue-500" />
+              <span>Instant feedback & explanations</span>
             </div>
-          </div>
-
-          {/* AI Toggle */}
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Brain className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">
-                AI Generation
-              </span>
-            </div>
-            <Button
-              variant={useAI ? "default" : "outline"}
-              size="sm"
-              onClick={() => setUseAI(!useAI)}
-              className={useAI ? "bg-blue-600 hover:bg-blue-700" : ""}
-            >
-              {useAI ? 'AI Mode' : 'Demo Mode'}
-            </Button>
           </div>
           
           <Button 
             className="w-full bg-[#0f6cbf] hover:bg-[#0d5aa7]" 
-            disabled={!hasAnyMaterials() || (useAI && quizState.isLoading)}
-            onClick={useAI ? handleAIQuizGeneration : undefined}
+            disabled={!hasAnyMaterials() || quizState.isLoading}
+            onClick={handleAIQuizGeneration}
           >
             {!hasAnyMaterials() 
               ? 'Select Material to Enable'
-              : useAI 
-                ? (quizState.isLoading ? 'Generating...' : 'Generate AI Quiz')
-                : 'Generate Quiz'
+              : quizState.isLoading 
+                ? 'Generating AI Quiz...' 
+                : 'Generate AI Quiz'
             }
           </Button>
         </div>

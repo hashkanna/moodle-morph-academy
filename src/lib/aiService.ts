@@ -49,54 +49,125 @@ export interface AIGeneratedExam {
 }
 
 class AIService {
-  private apiKey: string | null = null;
-  private baseUrl: string = 'https://api.openai.com/v1';
+  private openaiKey: string | null = null;
+  private claudeKey: string | null = null;
+  private provider: 'openai' | 'claude' | 'mock' = 'mock';
   
   constructor() {
-    // In a real app, this would come from environment variables
-    // For now, we'll simulate AI responses or use a fallback
-    this.apiKey = process.env.REACT_APP_OPENAI_API_KEY || null;
+    // Check for available API keys
+    this.openaiKey = import.meta.env.VITE_OPENAI_API_KEY || null;
+    this.claudeKey = import.meta.env.VITE_CLAUDE_API_KEY || null;
+    
+    // Debug logging
+    console.log('🔧 Environment variables:', {
+      hasOpenAI: !!this.openaiKey,
+      hasClaude: !!this.claudeKey,
+      claudeKeyPreview: this.claudeKey ? `${this.claudeKey.substring(0, 10)}...` : 'not found',
+      allEnvVars: import.meta.env
+    });
+    
+    // Prefer Claude if available, then OpenAI, then mock
+    if (this.claudeKey) {
+      this.provider = 'claude';
+      console.log('🤖 AI Service: Using Claude API');
+    } else if (this.openaiKey) {
+      this.provider = 'openai';
+      console.log('🤖 AI Service: Using OpenAI API');
+    } else {
+      this.provider = 'mock';
+      console.log('🤖 AI Service: Using mock responses (no API key found)');
+    }
   }
 
   private async callAI(prompt: string, maxTokens: number = 2000): Promise<string> {
-    if (!this.apiKey) {
-      // Fallback to mock responses for demo purposes
+    if (this.provider === 'mock') {
       return this.mockAIResponse(prompt);
     }
 
     try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an expert educational content creator specializing in Material Science. Generate high-quality, accurate educational content.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: maxTokens,
-          temperature: 0.7,
-        }),
-      });
-
-      const data = await response.json();
-      return data.choices[0].message.content;
+      if (this.provider === 'claude') {
+        return await this.callClaude(prompt, maxTokens);
+      } else if (this.provider === 'openai') {
+        return await this.callOpenAI(prompt, maxTokens);
+      }
     } catch (error) {
-      console.warn('AI API call failed, using fallback:', error);
+      console.warn(`${this.provider} API call failed, using fallback:`, error);
       return this.mockAIResponse(prompt);
     }
+
+    return this.mockAIResponse(prompt);
+  }
+
+  private async callClaude(prompt: string, maxTokens: number): Promise<string> {
+    console.log('🔵 Calling Claude API with prompt:', prompt.substring(0, 100) + '...');
+    
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': this.claudeKey!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: maxTokens,
+        temperature: 0.7,
+        system: 'You are an expert educational content creator specializing in Material Science. Generate high-quality, accurate educational content in the requested format.',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+      }),
+    });
+
+    const data = await response.json();
+    console.log('🔵 Claude API response status:', response.status);
+    
+    if (!response.ok) {
+      console.error('🔴 Claude API error:', data);
+      throw new Error(`Claude API error: ${data.error?.message || 'Unknown error'}`);
+    }
+    
+    console.log('✅ Claude API success, response length:', data.content[0].text.length);
+    return data.content[0].text;
+  }
+
+  private async callOpenAI(prompt: string, maxTokens: number): Promise<string> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert educational content creator specializing in Material Science. Generate high-quality, accurate educational content.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${data.error?.message || 'Unknown error'}`);
+    }
+    return data.choices[0].message.content;
   }
 
   private mockAIResponse(prompt: string): string {
+    console.log('⚠️ Using mock response - AI API not available or failed');
+    console.log('🔍 Prompt was:', prompt.substring(0, 200) + '...');
     // Intelligent mock responses based on prompt content
     if (prompt.includes('quiz') || prompt.includes('questions')) {
       return JSON.stringify({
@@ -114,6 +185,62 @@ class AIService {
             correctAnswer: 2,
             explanation: "FCC and HCP both have packing efficiencies of 74%, which is the highest possible.",
             difficulty: "hard"
+          },
+          {
+            question: "What type of bonding is predominant in ceramic materials?",
+            options: ["Metallic bonding", "Ionic and covalent bonding", "Van der Waals forces", "Hydrogen bonding"],
+            correctAnswer: 1,
+            explanation: "Ceramics are characterized by ionic and/or covalent bonding between atoms, which gives them high hardness and brittleness.",
+            difficulty: "medium"
+          },
+          {
+            question: "Which material property is most affected by grain size?",
+            options: ["Density", "Melting point", "Yield strength", "Thermal conductivity"],
+            correctAnswer: 2,
+            explanation: "According to the Hall-Petch relationship, yield strength increases with decreasing grain size.",
+            difficulty: "hard"
+          },
+          {
+            question: "What is the main difference between substitutional and interstitial solid solutions?",
+            options: ["Crystal structure", "Atomic size difference", "Bonding type", "Phase stability"],
+            correctAnswer: 1,
+            explanation: "Substitutional solutions have similar-sized atoms replacing host atoms, while interstitial solutions have small atoms fitting between host atoms.",
+            difficulty: "medium"
+          },
+          {
+            question: "Which phase transformation occurs in steel during quenching?",
+            options: ["Austenite to ferrite", "Austenite to martensite", "Ferrite to cementite", "Pearlite to bainite"],
+            correctAnswer: 1,
+            explanation: "Rapid cooling (quenching) transforms austenite to martensite, a hard but brittle phase.",
+            difficulty: "hard"
+          },
+          {
+            question: "What is the driving force for recrystallization?",
+            options: ["Temperature gradient", "Stored strain energy", "Chemical potential", "Surface energy"],
+            correctAnswer: 1,
+            explanation: "The stored strain energy from cold working provides the driving force for recrystallization.",
+            difficulty: "medium"
+          },
+          {
+            question: "Which composite reinforcement provides the highest strength-to-weight ratio?",
+            options: ["Glass fibers", "Carbon fibers", "Aramid fibers", "Steel fibers"],
+            correctAnswer: 1,
+            explanation: "Carbon fibers offer the highest strength-to-weight ratio, making them ideal for aerospace applications.",
+            difficulty: "medium"
+          },
+          {
+            question: "What determines the ductile-to-brittle transition temperature in BCC metals?",
+            options: ["Grain size", "Strain rate", "Crystal structure", "All of the above"],
+            correctAnswer: 3,
+            explanation: "The ductile-to-brittle transition is influenced by grain size, strain rate, and the inherent crystal structure properties.",
+            difficulty: "hard"
+          },
+          {
+            question: "Which heat treatment process increases toughness while slightly reducing hardness?",
+            options: ["Annealing", "Quenching", "Tempering", "Normalizing"],
+            correctAnswer: 2,
+            explanation: "Tempering reduces brittleness and increases toughness by allowing some martensite to transform to more ductile phases.",
+            difficulty: "medium"
           }
         ]
       });
@@ -124,7 +251,19 @@ class AIService {
         cards: [
           { front: "Elastizitätsmodul", back: "Maß für die Steifigkeit eines Materials - Verhältnis von Spannung zu Dehnung im elastischen Bereich", category: "mechanical_properties", difficulty: "medium" },
           { front: "Versetzung", back: "Liniendefekt im Kristallgitter, der die plastische Verformung in Metallen ermöglicht", category: "crystal_defects", difficulty: "medium" },
-          { front: "Korngrenze", back: "Grenzfläche zwischen zwei Kristallkörnern mit unterschiedlicher Orientierung", category: "microstructure", difficulty: "easy" }
+          { front: "Korngrenze", back: "Grenzfläche zwischen zwei Kristallkörnern mit unterschiedlicher Orientierung", category: "microstructure", difficulty: "easy" },
+          { front: "Fließgrenze", back: "Spannung, bei der ein Material beginnt sich plastisch zu verformen", category: "mechanical_properties", difficulty: "medium" },
+          { front: "Härte", back: "Widerstand eines Materials gegen lokale plastische Verformung", category: "mechanical_properties", difficulty: "easy" },
+          { front: "Zähigkeit", back: "Fähigkeit eines Materials, Energie zu absorbieren bevor es bricht", category: "mechanical_properties", difficulty: "hard" },
+          { front: "Kristallgitter", back: "Regelmäßige, dreidimensionale Anordnung von Atomen in einem Kristall", category: "crystal_structure", difficulty: "medium" },
+          { front: "Phasendiagramm", back: "Grafische Darstellung der Stabilitätsbereiche verschiedener Phasen", category: "phase_diagrams", difficulty: "hard" },
+          { front: "Diffusion", back: "Transport von Atomen durch thermische Bewegung im Festkörper", category: "transport_properties", difficulty: "medium" },
+          { front: "Rekristallisation", back: "Bildung neuer, spannungsfreier Körner nach Kaltverformung", category: "heat_treatment", difficulty: "hard" },
+          { front: "Martensit", back: "Harte, spröde Phase die bei schneller Abkühlung von Stahl entsteht", category: "phase_transformations", difficulty: "hard" },
+          { front: "Legierung", back: "Mischung aus zwei oder mehr metallischen Elementen", category: "alloys", difficulty: "easy" },
+          { front: "Korngröße", back: "Durchschnittliche Größe der Kristallkörner in einem polykristallinen Material", category: "microstructure", difficulty: "medium" },
+          { front: "Spannungsrisskorrosion", back: "Rissbildung unter kombinierter Wirkung von Spannung und korrosiver Umgebung", category: "failure_mechanisms", difficulty: "hard" },
+          { front: "Verbundwerkstoff", back: "Material aus zwei oder mehr Komponenten mit unterschiedlichen Eigenschaften", category: "composites", difficulty: "medium" }
         ]
       });
     }

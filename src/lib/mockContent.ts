@@ -44,12 +44,61 @@ export const mockContentByMaterial: Record<string, {
         options: ['High strength', 'Ordered atomic arrangement', 'Low density', 'High conductivity'],
         correctAnswer: 1,
         explanation: 'Crystalline materials have atoms arranged in a regular, repeating pattern or lattice structure.'
+      },
+      {
+        id: 'q1-3',
+        question: 'Which material class typically exhibits the highest electrical conductivity?',
+        options: ['Ceramics', 'Polymers', 'Metals', 'Composites'],
+        correctAnswer: 2,
+        explanation: 'Metals have free electrons that allow for excellent electrical conductivity.'
+      },
+      {
+        id: 'q1-4',
+        question: 'What type of bonding is predominant in ceramic materials?',
+        options: ['Metallic', 'Ionic and covalent', 'Van der Waals', 'Hydrogen bonding'],
+        correctAnswer: 1,
+        explanation: 'Ceramics are characterized by ionic and/or covalent bonding between atoms.'
+      },
+      {
+        id: 'q1-5',
+        question: 'Which property is most characteristic of polymer materials?',
+        options: ['High melting point', 'Brittleness', 'Low density', 'High thermal conductivity'],
+        correctAnswer: 2,
+        explanation: 'Polymers typically have low density due to their organic molecular structure.'
+      },
+      {
+        id: 'q1-6',
+        question: 'What is the main advantage of composite materials?',
+        options: ['Low cost', 'Combination of properties', 'Easy manufacturing', 'High temperature resistance'],
+        correctAnswer: 1,
+        explanation: 'Composites combine the best properties of their constituent materials.'
+      },
+      {
+        id: 'q1-7',
+        question: 'Which factor most influences the properties of materials?',
+        options: ['Color', 'Atomic structure', 'Cost', 'Availability'],
+        correctAnswer: 1,
+        explanation: 'The atomic structure and bonding determine all material properties.'
+      },
+      {
+        id: 'q1-8',
+        question: 'What distinguishes amorphous from crystalline materials?',
+        options: ['Chemical composition', 'Atomic arrangement', 'Density', 'Electrical properties'],
+        correctAnswer: 1,
+        explanation: 'Amorphous materials lack long-range atomic order, while crystalline materials have ordered atomic arrangements.'
       }
     ],
     ankiCards: [
       { id: 'a1-1', front: 'Materialklassen', back: 'Metalle, Keramiken, Polymere, und Verbundwerkstoffe - die vier Hauptklassen von Ingenieurwerkstoffen' },
       { id: 'a1-2', front: 'Kristalline Struktur', back: 'Regelmäßige, sich wiederholende Anordnung von Atomen in einem Gitter' },
-      { id: 'a1-3', front: 'Amorphe Materialien', back: 'Materialien ohne langreichweitige Ordnung in der Atomstruktur (z.B. Gläser)' }
+      { id: 'a1-3', front: 'Amorphe Materialien', back: 'Materialien ohne langreichweitige Ordnung in der Atomstruktur (z.B. Gläser)' },
+      { id: 'a1-4', front: 'Metallische Bindung', back: 'Bindung durch frei bewegliche Elektronenwolke - ermöglicht elektrische Leitfähigkeit' },
+      { id: 'a1-5', front: 'Ionische Bindung', back: 'Elektrostatische Anziehung zwischen positiven und negativen Ionen' },
+      { id: 'a1-6', front: 'Kovalente Bindung', back: 'Gemeinsame Nutzung von Elektronenpaaren zwischen Atomen' },
+      { id: 'a1-7', front: 'Verbundwerkstoffe', back: 'Kombination aus Matrix und Verstärkung für optimierte Eigenschaften' },
+      { id: 'a1-8', front: 'Polymere', back: 'Lange Molekülketten aus organischen Monomeren - niedrige Dichte' },
+      { id: 'a1-9', front: 'Keramiken', back: 'Hohe Härte und Sprödigkeit - ionische/kovalente Bindung' },
+      { id: 'a1-10', front: 'Struktur-Eigenschafts-Beziehung', back: 'Atomstruktur und Bindung bestimmen alle Materialeigenschaften' }
     ],
     examQuestions: [
       {

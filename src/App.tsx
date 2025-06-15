@@ -15,26 +15,28 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <MaterialProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/upload" element={<Upload />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/quiz" element={<Quiz />} />
-            <Route path="/anki-cards" element={<AnkiCards />} />
-            <Route path="/mock-exam" element={<MockExam />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </MaterialProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <MaterialProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/upload" element={<Upload />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/quiz" element={<Quiz />} />
+              <Route path="/anki-cards" element={<AnkiCards />} />
+              <Route path="/mock-exam" element={<MockExam />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </MaterialProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
