@@ -1,19 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, BookOpen, Check, X, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Check, X, RotateCcw, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-
-interface Question {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-}
+import { useMaterials } from '@/contexts/MaterialContext';
+import { getMockContentForMaterial, MockQuizQuestion } from '@/lib/mockContent';
 
 const Quiz = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -22,50 +17,18 @@ const Quiz = () => {
   const [score, setScore] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [isComplete, setIsComplete] = useState(false);
-
-  // Sample questions - in a real app, these would come from your uploaded materials
-  const questions: Question[] = [
-    {
-      id: 1,
-      question: "What is the primary function of photosynthesis in plants?",
-      options: [
-        "To break down glucose for energy",
-        "To convert light energy into chemical energy",
-        "To absorb water from the soil",
-        "To release oxygen as waste"
-      ],
-      correctAnswer: 1,
-      explanation: "Photosynthesis converts light energy into chemical energy (glucose) using CO2 and water."
-    },
-    {
-      id: 2,
-      question: "Which organelle is responsible for cellular respiration?",
-      options: [
-        "Nucleus",
-        "Chloroplast",
-        "Mitochondria",
-        "Ribosome"
-      ],
-      correctAnswer: 2,
-      explanation: "Mitochondria are the powerhouses of the cell, responsible for cellular respiration and ATP production."
-    },
-    {
-      id: 3,
-      question: "What is the chemical formula for water?",
-      options: [
-        "H2O",
-        "CO2",
-        "NaCl",
-        "C6H12O6"
-      ],
-      correctAnswer: 0,
-      explanation: "Water consists of two hydrogen atoms and one oxygen atom, hence H2O."
-    }
-  ];
+  
+  const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
+  const materialInfo = getCurrentMaterialInfo();
+  
+  // Get questions from selected material
+  const materialId = materialInfo.material?.id || 'default';
+  const mockContent = getMockContentForMaterial(materialId);
+  const questions = mockContent.quizQuestions;
 
   useEffect(() => {
     setAnswers(new Array(questions.length).fill(null));
-  }, []);
+  }, [questions.length]);
 
   const handleAnswerSelect = (answerIndex: number) => {
     setSelectedAnswer(answerIndex);
@@ -108,6 +71,70 @@ const Quiz = () => {
 
   const progress = ((currentQuestion + (showResult ? 1 : 0)) / questions.length) * 100;
 
+  // Show material selection prompt if no material selected
+  if (!hasAnyMaterials()) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] font-sans">
+        <header className="bg-[#0f6cbf] text-white shadow-lg">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/b1e02ec5-6a97-4c44-912c-358925786899.png" 
+                    alt="Dood Logo" 
+                    className="h-6 w-6 object-contain"
+                  />
+                </div>
+                <h1 className="text-2xl font-bold">Dood</h1>
+              </Link>
+              <Link to="/">
+                <Button className="bg-white text-[#0f6cbf] hover:bg-gray-100">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-6 py-8">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-[#0f6cbf] flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 mr-2" />
+                No Material Selected
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-6">
+              <div className="text-6xl">📚</div>
+              <div>
+                <div className="text-lg text-gray-600 mb-4">
+                  Please select a course material to generate quiz questions.
+                </div>
+                <div className="text-sm text-gray-500">
+                  Go to Course Materials and choose from our Material Science curriculum or upload your own files.
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Link to="/upload">
+                  <Button className="bg-[#0f6cbf] hover:bg-[#0d5aa7] mr-4">
+                    Select Course Material
+                  </Button>
+                </Link>
+                <Link to="/">
+                  <Button variant="outline">
+                    Back to Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (isComplete) {
     const percentage = Math.round((score / questions.length) * 100);
     return (
@@ -139,6 +166,13 @@ const Quiz = () => {
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-[#0f6cbf]">Quiz Complete!</CardTitle>
+              {materialInfo.material && (
+                <div className="flex justify-center mt-2">
+                  <Badge className="bg-blue-100 text-blue-800">
+                    {materialInfo.material.title}
+                  </Badge>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="text-center space-y-6">
               <div className="text-6xl">
@@ -149,6 +183,11 @@ const Quiz = () => {
                 <div className="text-gray-600">
                   You got {score} out of {questions.length} questions correct
                 </div>
+                {materialInfo.material && (
+                  <div className="text-sm text-gray-500 mt-2">
+                    Based on: {materialInfo.material.title}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Button 
@@ -203,6 +242,11 @@ const Quiz = () => {
               <h2 className="text-xl font-semibold text-[#0f6cbf] flex items-center">
                 <BookOpen className="h-6 w-6 mr-2" />
                 Quiz
+                {materialInfo.material && (
+                  <Badge className="ml-2 bg-blue-100 text-blue-800">
+                    {materialInfo.material.title}
+                  </Badge>
+                )}
               </h2>
               <span className="text-sm text-gray-600">
                 Question {currentQuestion + 1} of {questions.length}

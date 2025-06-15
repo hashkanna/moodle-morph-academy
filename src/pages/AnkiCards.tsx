@@ -1,57 +1,33 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Brain, RotateCcw, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Brain, RotateCcw, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-
-interface FlashCard {
-  id: number;
-  front: string;
-  back: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-}
+import { useMaterials } from '@/contexts/MaterialContext';
+import { getMockContentForMaterial } from '@/lib/mockContent';
 
 const AnkiCards = () => {
   const [currentCard, setCurrentCard] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [studiedCards, setStudiedCards] = useState<number[]>([]);
-
-  // Sample flashcards - in a real app, these would be generated from uploaded materials
-  const flashcards: FlashCard[] = [
-    {
-      id: 1,
-      front: "What is photosynthesis?",
-      back: "The process by which plants use sunlight, carbon dioxide, and water to produce glucose and oxygen.",
-      difficulty: 'medium'
-    },
-    {
-      id: 2,
-      front: "Define cellular respiration",
-      back: "The process by which cells break down glucose and other organic molecules to release energy in the form of ATP.",
-      difficulty: 'medium'
-    },
-    {
-      id: 3,
-      front: "What is the powerhouse of the cell?",
-      back: "Mitochondria - they produce ATP through cellular respiration.",
-      difficulty: 'easy'
-    },
-    {
-      id: 4,
-      front: "Explain the difference between prokaryotic and eukaryotic cells",
-      back: "Prokaryotic cells lack a membrane-bound nucleus (bacteria), while eukaryotic cells have a nucleus enclosed by a nuclear membrane (plants, animals, fungi).",
-      difficulty: 'hard'
-    }
-  ];
+  
+  const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
+  const materialInfo = getCurrentMaterialInfo();
+  
+  // Get flashcards from selected material
+  const materialId = materialInfo.material?.id || 'default';
+  const mockContent = getMockContentForMaterial(materialId);
+  const flashcards = mockContent.ankiCards;
 
   const handleCardFlip = () => {
     setShowAnswer(!showAnswer);
   };
 
   const handleNext = (difficulty: 'easy' | 'medium' | 'hard') => {
-    setStudiedCards(prev => [...prev, flashcards[currentCard].id]);
+    setStudiedCards(prev => [...prev, currentCard]);
     
     if (difficulty === 'easy') {
       toast.success('Easy! Card mastered! 🎉');
@@ -76,6 +52,70 @@ const AnkiCards = () => {
   };
 
   const progress = ((currentCard + 1) / flashcards.length) * 100;
+
+  // Show material selection prompt if no material selected
+  if (!hasAnyMaterials()) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] font-sans">
+        <header className="bg-[#0f6cbf] text-white shadow-lg">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/b1e02ec5-6a97-4c44-912c-358925786899.png" 
+                    alt="Dood Logo" 
+                    className="h-6 w-6 object-contain"
+                  />
+                </div>
+                <h1 className="text-2xl font-bold">Dood</h1>
+              </Link>
+              <Link to="/">
+                <Button className="bg-white text-[#0f6cbf] hover:bg-gray-100">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-6 py-8">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-[#0f6cbf] flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 mr-2" />
+                No Material Selected
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-6">
+              <div className="text-6xl">🧠</div>
+              <div>
+                <div className="text-lg text-gray-600 mb-4">
+                  Please select a course material to generate flashcards.
+                </div>
+                <div className="text-sm text-gray-500">
+                  Go to Course Materials and choose from our Material Science curriculum or upload your own files.
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Link to="/upload">
+                  <Button className="bg-[#0f6cbf] hover:bg-[#0d5aa7] mr-4">
+                    Select Course Material
+                  </Button>
+                </Link>
+                <Link to="/">
+                  <Button variant="outline">
+                    Back to Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (currentCard >= flashcards.length) {
     return (
@@ -105,11 +145,20 @@ const AnkiCards = () => {
 
         <div className="container mx-auto px-6 py-8">
           <Card className="max-w-2xl mx-auto">
-            <CardContent className="text-center space-y-6 p-8">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-[#0f6cbf]">Session Complete!</CardTitle>
+              {materialInfo.material && (
+                <div className="flex justify-center mt-2">
+                  <Badge className="bg-blue-100 text-blue-800">
+                    {materialInfo.material.title}
+                  </Badge>
+                </div>
+              )}
+            </CardHeader>
+            <CardContent className="text-center space-y-6">
               <div className="text-6xl">🎉</div>
-              <h2 className="text-2xl font-bold text-[#0f6cbf]">Session Complete!</h2>
               <p className="text-gray-600">
-                You've reviewed all {flashcards.length} cards. Great job studying!
+                You've reviewed all {flashcards.length} cards from {materialInfo.material?.title || 'your material'}. Great job studying!
               </p>
               <div className="space-y-2">
                 <Button 
@@ -164,6 +213,11 @@ const AnkiCards = () => {
               <h2 className="text-xl font-semibold text-[#0f6cbf] flex items-center">
                 <Brain className="h-6 w-6 mr-2" />
                 Anki Cards
+                {materialInfo.material && (
+                  <Badge className="ml-2 bg-blue-100 text-blue-800">
+                    {materialInfo.material.title}
+                  </Badge>
+                )}
               </h2>
               <span className="text-sm text-gray-600">
                 Card {currentCard + 1} of {flashcards.length}

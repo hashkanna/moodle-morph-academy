@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 interface FileUploadZoneProps {
   onFileUpload: (files: File[]) => void;
   uploadedFiles: File[];
+  onRemoveFile?: (index: number) => void;
 }
 
-const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onFileUpload, uploadedFiles }) => {
+const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onFileUpload, uploadedFiles, onRemoveFile }) => {
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files).filter(file => file.type === 'application/pdf');
@@ -26,8 +27,9 @@ const FileUploadZone: React.FC<FileUploadZoneProps> = ({ onFileUpload, uploadedF
   };
 
   const removeFile = (index: number) => {
-    // In a real implementation, you'd update the parent state
-    console.log('Remove file at index:', index);
+    if (onRemoveFile) {
+      onRemoveFile(index);
+    }
   };
 
   return (

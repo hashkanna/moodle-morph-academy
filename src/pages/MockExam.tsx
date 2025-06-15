@@ -1,93 +1,48 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Clock, FileText, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Clock, FileText, AlertCircle, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-
-interface ExamQuestion {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  points: number;
-}
+import { useMaterials } from '@/contexts/MaterialContext';
+import { getMockContentForMaterial } from '@/lib/mockContent';
 
 const MockExam = () => {
-  const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes
+  const [timeLeft, setTimeLeft] = useState(5400); // 90 minutes
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [isComplete, setIsComplete] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-
-  const examQuestions: ExamQuestion[] = [
-    {
-      id: 1,
-      question: "What is the primary function of chloroplasts in plant cells?",
-      options: [
-        "Protein synthesis",
-        "Photosynthesis",
-        "Cellular respiration",
-        "DNA storage"
-      ],
-      correctAnswer: 1,
+  
+  const { getCurrentMaterialInfo, hasAnyMaterials } = useMaterials();
+  const materialInfo = getCurrentMaterialInfo();
+  
+  // Get exam questions from selected material (combine quiz + exam questions)
+  const materialId = materialInfo.material?.id || 'default';
+  const mockContent = getMockContentForMaterial(materialId);
+  const examQuestions = [
+    ...mockContent.quizQuestions.map((q, index) => ({
+      id: index + 1,
+      question: q.question,
+      options: q.options,
+      correctAnswer: q.correctAnswer,
       points: 10
-    },
-    {
-      id: 2,
-      question: "Which of the following best describes the process of mitosis?",
-      options: [
-        "Cell division that produces gametes",
-        "Cell division that produces identical diploid cells",
-        "The process of protein folding",
-        "The breakdown of cellular waste"
-      ],
-      correctAnswer: 1,
-      points: 15
-    },
-    {
-      id: 3,
-      question: "In which phase of cellular respiration is the most ATP produced?",
-      options: [
-        "Glycolysis",
-        "Krebs cycle",
-        "Electron transport chain",
-        "Fermentation"
-      ],
-      correctAnswer: 2,
-      points: 15
-    },
-    {
-      id: 4,
-      question: "What is the difference between prokaryotic and eukaryotic cells?",
-      options: [
-        "Size difference only",
-        "Presence or absence of a membrane-bound nucleus",
-        "Number of chromosomes",
-        "Ability to reproduce"
-      ],
-      correctAnswer: 1,
-      points: 20
-    },
-    {
-      id: 5,
-      question: "Which molecule serves as the primary energy currency in cells?",
-      options: [
-        "DNA",
-        "RNA",
-        "ATP",
-        "Glucose"
-      ],
-      correctAnswer: 2,
-      points: 10
-    }
+    })),
+    ...mockContent.examQuestions.map((eq, index) => ({
+      id: mockContent.quizQuestions.length + index + 1,
+      question: eq.question,
+      options: eq.options,
+      correctAnswer: eq.correctAnswer,
+      points: eq.points
+    }))
   ];
 
   useEffect(() => {
     setAnswers(new Array(examQuestions.length).fill(null));
-  }, []);
+  }, [examQuestions.length]);
 
   useEffect(() => {
     if (timeLeft > 0 && !isComplete) {
@@ -139,6 +94,70 @@ const MockExam = () => {
   const progress = ((currentQuestion + 1) / examQuestions.length) * 100;
   const answeredQuestions = answers.filter(answer => answer !== null).length;
 
+  // Show material selection prompt if no material selected
+  if (!hasAnyMaterials()) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa] font-sans">
+        <header className="bg-[#0f6cbf] text-white shadow-lg">
+          <div className="container mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
+                <div className="h-8 w-8 bg-white rounded-full flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/lovable-uploads/b1e02ec5-6a97-4c44-912c-358925786899.png" 
+                    alt="Dood Logo" 
+                    className="h-6 w-6 object-contain"
+                  />
+                </div>
+                <h1 className="text-2xl font-bold">Dood</h1>
+              </Link>
+              <Link to="/">
+                <Button className="bg-white text-[#0f6cbf] hover:bg-gray-100">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-6 py-8">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-[#0f6cbf] flex items-center justify-center">
+                <AlertCircle className="h-6 w-6 mr-2" />
+                No Material Selected
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center space-y-6">
+              <div className="text-6xl">🎯</div>
+              <div>
+                <div className="text-lg text-gray-600 mb-4">
+                  Please select a course material to generate exam questions.
+                </div>
+                <div className="text-sm text-gray-500">
+                  Go to Course Materials and choose from our Material Science curriculum or upload your own files.
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Link to="/upload">
+                  <Button className="bg-[#0f6cbf] hover:bg-[#0d5aa7] mr-4">
+                    Select Course Material
+                  </Button>
+                </Link>
+                <Link to="/">
+                  <Button variant="outline">
+                    Back to Dashboard
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (isComplete) {
     const { totalScore, maxScore, percentage } = calculateScore();
     
@@ -171,6 +190,13 @@ const MockExam = () => {
           <Card className="max-w-2xl mx-auto">
             <CardHeader className="text-center">
               <CardTitle className="text-2xl text-[#0f6cbf]">Exam Complete!</CardTitle>
+              {materialInfo.material && (
+                <div className="flex justify-center mt-2">
+                  <Badge className="bg-blue-100 text-blue-800">
+                    {materialInfo.material.title}
+                  </Badge>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="text-center space-y-6">
               <div className="text-6xl">
@@ -181,6 +207,11 @@ const MockExam = () => {
                 <div className="text-gray-600">
                   {totalScore} out of {maxScore} points
                 </div>
+                {materialInfo.material && (
+                  <div className="text-sm text-gray-500 mt-2">
+                    Based on: {materialInfo.material.title}
+                  </div>
+                )}
               </div>
               
               <div className="space-y-3 text-left">
@@ -241,8 +272,13 @@ const MockExam = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center text-[#0f6cbf]">
-                  <FileText className="h-6 w-6 mr-2" />
+                  <Target className="h-6 w-6 mr-2" />
                   Mock Exam
+                  {materialInfo.material && (
+                    <Badge className="ml-2 bg-blue-100 text-blue-800">
+                      {materialInfo.material.title}
+                    </Badge>
+                  )}
                 </CardTitle>
                 <div className="text-right">
                   <div className="text-sm text-gray-600">Progress</div>
@@ -254,7 +290,7 @@ const MockExam = () => {
               <Progress value={progress} className="mb-4" />
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>Total Points: {examQuestions.reduce((sum, q) => sum + q.points, 0)}</span>
-                <span>Time Limit: 30 minutes</span>
+                <span>Time Limit: 90 minutes</span>
               </div>
             </CardContent>
           </Card>

@@ -16,7 +16,6 @@ const Index = () => {
   const [timeLeft, setTimeLeft] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isStatsMenuOpen, setIsStatsMenuOpen] = useState(false);
-  const hasUploadedFiles = true;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -67,7 +66,7 @@ const Index = () => {
               <Link to="/upload">
                 <Button variant="outline" className="bg-transparent border-white text-white hover:bg-white/10">
                   <Upload className="h-4 w-4 mr-2" />
-                  Upload Materials
+                  Course Materials
                 </Button>
               </Link>
               <Link to="/calendar">
@@ -107,7 +106,7 @@ const Index = () => {
           <div className="w-full">
             <Link to="/quiz">
               <div className="cursor-pointer transform hover:scale-[1.02] transition-transform duration-200">
-                <QuizApp isEnabled={hasUploadedFiles} />
+                <QuizApp />
               </div>
             </Link>
           </div>
@@ -116,12 +115,12 @@ const Index = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Link to="/anki-cards">
               <div className="cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 h-full">
-                <AnkiCardApp isEnabled={hasUploadedFiles} />
+                <AnkiCardApp />
               </div>
             </Link>
             <Link to="/mock-exam">
               <div className="cursor-pointer transform hover:scale-[1.02] transition-transform duration-200 h-full">
-                <MockExamApp isEnabled={hasUploadedFiles} />
+                <MockExamApp />
               </div>
             </Link>
           </div>
@@ -170,7 +169,7 @@ const Index = () => {
               </div>
               
               <div className="flex-1">
-                <ChatApp isEnabled={hasUploadedFiles} />
+                <ChatApp />
               </div>
             </div>
           </div>
