@@ -132,17 +132,17 @@ const GoogleCalendarSync: React.FC<GoogleCalendarSyncProps> = ({
             <div className="flex items-start space-x-2">
               <XCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-amber-800">
-                <div className="font-medium mb-1">OAuth Integration Disabled</div>
+                <div className="font-medium mb-1">API Configuration Required</div>
                 <p className="mb-2">
-                  Personal calendar sync has been temporarily disabled to avoid deprecated authentication library warnings.
+                  Your Google Calendar API needs proper configuration to enable personal sync.
                 </p>
                 <div className="text-xs text-amber-700 space-y-1">
-                  <p><strong>Current Status:</strong></p>
-                  <p>• ✅ Course Calendar: Working (public calendar embed)</p>
-                  <p>• ✅ Study Schedule: Working (AI-generated calendar)</p>
-                  <p>• ⏸️ Personal Sync: Disabled (avoiding deprecated Google auth library)</p>
-                  <p></p>
-                  <p><strong>Note:</strong> Google deprecated some auth libraries. We've disabled OAuth to prevent warnings while keeping all core functionality working.</p>
+                  <p><strong>To Fix:</strong></p>
+                  <p>1. Go to Google Cloud Console → APIs & Services → Credentials</p>
+                  <p>2. Edit your API Key → Application restrictions</p>
+                  <p>3. Set to "HTTP referrers" and add: <code className="bg-amber-200 px-1 rounded">localhost:8081/*</code></p>
+                  <p>4. Save and wait 2-3 minutes for changes to take effect</p>
+                  <p>5. Refresh this page and try connecting again</p>
                 </div>
                 <div className="mt-2 text-xs text-amber-600">
                   <p>💡 Check browser console for detailed error messages</p>

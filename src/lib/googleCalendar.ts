@@ -19,6 +19,8 @@ export interface StudyEvent {
 
 class GoogleCalendarService {
   private gapi: any = null;
+  private tokenClient: any = null;
+  private accessToken: string | null = null;
   private isSignedIn = false;
   private calendar: any = null;
 
@@ -66,12 +68,12 @@ class GoogleCalendarService {
         console.log('✅ Google API script already available');
       }
 
-      // Load the required Google API libraries with shorter timeout
+      // Load the required Google API libraries (only client, no deprecated auth2)
       console.log('🔧 Loading Google API libraries...');
       await Promise.race([
         new Promise<void>((resolve, reject) => {
           try {
-            // Load only client library first, skip deprecated auth2
+            // Load only client library - using new GIS for auth
             window.gapi.load('client', () => {
               console.log('📦 Google API client library loaded successfully');
               resolve();
@@ -85,7 +87,7 @@ class GoogleCalendarService {
         })
       ]);
 
-      // Initialize the Google API client with simplified approach
+      // Initialize the Google API client (API key only, no deprecated OAuth)
       console.log('🔧 Initializing Google API client...');
       await Promise.race([
         new Promise<void>((resolve, reject) => {
@@ -93,7 +95,7 @@ class GoogleCalendarService {
             apiKey: apiKey,
             discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest']
           }).then(() => {
-            console.log('🎉 Google API client init completed (API key only)');
+            console.log('🎉 Google API client init completed');
             resolve();
           }).catch((error: any) => {
             console.error('🚫 Google API client init failed:', error);
@@ -114,10 +116,25 @@ class GoogleCalendarService {
       this.gapi = window.gapi;
       this.calendar = this.gapi.client.calendar;
       
-      // For now, skip OAuth initialization to avoid deprecated warnings
-      // We'll implement modern OAuth when needed
-      this.isSignedIn = false;
-      console.log('✅ Google Calendar API initialized (read-only mode)');
+      // Initialize modern Google Identity Services for OAuth
+      if (window.google && window.google.accounts) {
+        console.log('🔧 Initializing Google Identity Services...');
+        this.tokenClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/calendar',
+          callback: (response: any) => {
+            if (response.access_token) {
+              this.accessToken = response.access_token;
+              this.isSignedIn = true;
+              console.log('✅ OAuth token received via GIS');
+            }
+          },
+        });
+        console.log('✅ Google Identity Services initialized');
+      } else {
+        console.warn('⚠️ Google Identity Services not available');
+        this.isSignedIn = false;
+      }
       
       console.log('✅ Google Calendar API initialized successfully');
       return true;
@@ -183,20 +200,46 @@ class GoogleCalendarService {
     });
   }
 
-  // Sign in to Google
+  // Sign in to Google using modern GIS
   async signIn(): Promise<boolean> {
     try {
-      if (!this.gapi) {
+      if (!this.gapi || !this.tokenClient) {
         const initialized = await this.initialize();
         if (!initialized) return false;
       }
 
-      const authInstance = this.gapi.auth2.getAuthInstance();
-      await authInstance.signIn();
-      this.isSignedIn = authInstance.isSignedIn.get();
-      
-      console.log('✅ Successfully signed in to Google Calendar');
-      return this.isSignedIn;
+      if (!this.tokenClient) {
+        console.error('❌ Token client not available - GIS not initialized');
+        return false;
+      }
+
+      // Check if user already has valid token
+      if (this.accessToken) {
+        // Set the token for API calls
+        this.gapi.client.setToken({ access_token: this.accessToken });
+        this.isSignedIn = true;
+        return true;
+      }
+
+      // Request access token using modern GIS
+      console.log('🔐 Requesting OAuth token via Google Identity Services...');
+      return new Promise((resolve) => {
+        this.tokenClient.callback = (response: any) => {
+          if (response.access_token) {
+            this.accessToken = response.access_token;
+            this.isSignedIn = true;
+            // Set the token for API calls
+            this.gapi.client.setToken({ access_token: this.accessToken });
+            console.log('✅ Successfully signed in to Google Calendar via GIS');
+            resolve(true);
+          } else {
+            console.error('❌ Failed to get access token');
+            resolve(false);
+          }
+        };
+        
+        this.tokenClient.requestAccessToken();
+      });
     } catch (error) {
       console.error('❌ Failed to sign in to Google Calendar:', error);
       return false;
@@ -206,9 +249,21 @@ class GoogleCalendarService {
   // Sign out from Google
   async signOut(): Promise<void> {
     try {
-      if (this.gapi && this.isSignedIn) {
-        await this.gapi.auth2.getAuthInstance().signOut();
+      if (this.accessToken) {
+        // Revoke the token using GIS
+        if (window.google && window.google.accounts.oauth2) {
+          window.google.accounts.oauth2.revoke(this.accessToken);
+        }
+        
+        // Clear local state
+        this.accessToken = null;
         this.isSignedIn = false;
+        
+        // Clear token from gapi client
+        if (this.gapi) {
+          this.gapi.client.setToken(null);
+        }
+        
         console.log('✅ Signed out from Google Calendar');
       }
     } catch (error) {
@@ -218,7 +273,7 @@ class GoogleCalendarService {
 
   // Check if user is signed in
   getSignInStatus(): boolean {
-    return this.isSignedIn && this.gapi?.auth2?.getAuthInstance()?.isSignedIn?.get();
+    return this.isSignedIn && !!this.accessToken;
   }
 
   // Get user's calendar list
