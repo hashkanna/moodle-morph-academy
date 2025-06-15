@@ -1,5 +1,7 @@
-// AI Service for generating educational content from course materials
-// This service integrates with AI providers to generate quizzes, flashcards, and exams
+// Agentic AI Service for generating educational content from course materials
+// This service uses specialized AI agents for different educational tasks
+import { agentManager } from './agents/AgentManager';
+import { getMockContentForMaterial } from './mockContent';
 
 export interface AIGeneratedQuiz {
   questions: Array<{
@@ -299,49 +301,25 @@ class AIService {
     difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
     language?: 'en' | 'de';
   } = {}): Promise<AIGeneratedQuiz> {
-    const { questionCount = 5, difficulty = 'mixed', language = 'en' } = options;
+    const { questionCount = 10, difficulty = 'mixed' } = options;
     
-    const prompt = `
-Generate ${questionCount} multiple-choice quiz questions based on the following Material Science content.
-
-Content: "${sourceText}"
-
-Requirements:
-- Difficulty level: ${difficulty}
-- Language: ${language}
-- Format: Multiple choice with 4 options each
-- Include detailed explanations
-- Focus on key concepts, formulas, and applications
-- Questions should test understanding, not just memorization
-
-Return as JSON with this structure:
-{
-  "questions": [
-    {
-      "question": "string",
-      "options": ["option1", "option2", "option3", "option4"],
-      "correctAnswer": 0,
-      "explanation": "string",
-      "difficulty": "easy|medium|hard"
-    }
-  ]
-}
-`;
-
-    const response = await this.callAI(prompt, 3000);
+    console.log('🤖 Agentic AI: Delegating quiz generation to Quiz Master Agent...');
     
     try {
-      const parsed = JSON.parse(response);
-      return {
-        questions: parsed.questions || [],
-        metadata: {
-          sourceText: sourceText.substring(0, 200) + '...',
-          generatedAt: new Date().toISOString(),
-          totalQuestions: parsed.questions?.length || 0
-        }
-      };
+      // Use specialized Quiz Master Agent for quiz generation
+      const quiz = await agentManager.generateQuiz(sourceText, {
+        questionCount,
+        difficulty
+      });
+
+      // Enhance quiz with vocabulary hints if it contains German terms
+      const enhancedQuiz = await agentManager.enhanceQuizWithVocabHints(quiz);
+      
+      console.log('✅ Agentic AI: Quiz generation completed with agent collaboration');
+      return enhancedQuiz;
     } catch (error) {
-      throw new Error('Failed to parse AI response for quiz generation');
+      console.error('❌ Agentic AI: Quiz generation failed, using fallback:', error);
+      return this.getFallbackQuiz(questionCount);
     }
   }
 
@@ -350,48 +328,23 @@ Return as JSON with this structure:
     language?: 'en' | 'de';
     includeFormulas?: boolean;
   } = {}): Promise<AIGeneratedFlashcards> {
-    const { cardCount = 10, language = 'de', includeFormulas = true } = options;
+    const { cardCount = 15, includeFormulas = true } = options;
     
-    const prompt = `
-Generate ${cardCount} flashcards for Anki based on the following Material Science content.
-
-Content: "${sourceText}"
-
-Requirements:
-- Language: ${language} (German terms preferred for technical vocabulary)
-- Include key terms, definitions, concepts, and ${includeFormulas ? 'formulas' : 'no formulas'}
-- Front: Term or concept
-- Back: Clear, concise definition or explanation
-- Mix difficulty levels
-- Focus on terminology that students need to memorize
-
-Return as JSON with this structure:
-{
-  "cards": [
-    {
-      "front": "string",
-      "back": "string", 
-      "category": "string",
-      "difficulty": "easy|medium|hard"
-    }
-  ]
-}
-`;
-
-    const response = await this.callAI(prompt, 3000);
+    console.log('🇩🇪 Agentic AI: Delegating flashcard generation to Vocab Sensei Agent...');
     
     try {
-      const parsed = JSON.parse(response);
-      return {
-        cards: parsed.cards || [],
-        metadata: {
-          sourceText: sourceText.substring(0, 200) + '...',
-          generatedAt: new Date().toISOString(),
-          totalCards: parsed.cards?.length || 0
-        }
-      };
+      // Use specialized Vocab Sensei Agent for flashcard generation
+      const focusLevel = includeFormulas ? 'mixed' : 'vocabulary';
+      const flashcards = await agentManager.generateFlashcards(sourceText, {
+        cardCount,
+        focusLevel
+      });
+      
+      console.log('✅ Agentic AI: Flashcard generation completed by Vocab Sensei');
+      return flashcards;
     } catch (error) {
-      throw new Error('Failed to parse AI response for flashcard generation');
+      console.error('❌ Agentic AI: Flashcard generation failed, using fallback:', error);
+      return this.getFallbackFlashcards(cardCount);
     }
   }
 
@@ -402,54 +355,23 @@ Return as JSON with this structure:
     includeCalculations?: boolean;
     language?: 'en' | 'de';
   } = {}): Promise<AIGeneratedExam> {
-    const { questionCount = 8, duration = 90, includeEssay = true, includeCalculations = true, language = 'en' } = options;
+    const { questionCount = 8, duration = 90 } = options;
     
-    const prompt = `
-Generate a comprehensive exam with ${questionCount} questions based on the following Material Science content.
-
-Content: "${sourceText}"
-
-Requirements:
-- Duration: ${duration} minutes
-- Include multiple choice, ${includeEssay ? 'essay questions,' : ''} ${includeCalculations ? 'and calculation problems' : ''}
-- Language: ${language}
-- Point values should reflect question difficulty and length
-- Include detailed explanations for correct answers
-- Cover breadth and depth of the material
-- Mix question types and difficulty levels
-
-Return as JSON with this structure:
-{
-  "questions": [
-    {
-      "question": "string",
-      "options": ["option1", "option2", "option3", "option4"],
-      "correctAnswer": 0,
-      "points": 10,
-      "type": "multiple_choice|essay|calculation",
-      "explanation": "string"
-    }
-  ]
-}
-`;
-
-    const response = await this.callAI(prompt, 4000);
+    console.log('📊 Agentic AI: Delegating exam generation to Exam Proctor Agent...');
     
     try {
-      const parsed = JSON.parse(response);
-      const questions = parsed.questions || [];
-      return {
-        questions,
-        metadata: {
-          sourceText: sourceText.substring(0, 200) + '...',
-          generatedAt: new Date().toISOString(),
-          totalQuestions: questions.length,
-          totalPoints: questions.reduce((sum: number, q: any) => sum + (q.points || 10), 0),
-          estimatedDuration: duration
-        }
-      };
+      // Use specialized Exam Proctor Agent for exam generation
+      const exam = await agentManager.generateExam(sourceText, {
+        questionCount,
+        duration,
+        examType: 'practice'
+      });
+      
+      console.log('✅ Agentic AI: Exam generation completed by Exam Proctor with difficulty analysis');
+      return exam;
     } catch (error) {
-      throw new Error('Failed to parse AI response for exam generation');
+      console.error('❌ Agentic AI: Exam generation failed, using fallback:', error);
+      return this.getFallbackExam(questionCount);
     }
   }
 
@@ -483,6 +405,281 @@ Return as a simple JSON array of strings: ["topic1", "topic2", ...]
     } catch {
       return ['Material Properties', 'Crystal Structure', 'Mechanical Behavior'];
     }
+  }
+
+  // Fallback methods for when agent generation fails - use direct AI generation
+  private async getFallbackQuiz(questionCount: number, sourceText: string = ''): Promise<AIGeneratedQuiz> {
+    console.log('🔄 Fallback: Attempting direct AI quiz generation...');
+    
+    try {
+      // Use the original Claude API directly as fallback
+      const prompt = `Generate ${questionCount} Material Science quiz questions. 
+      ${sourceText ? `Based on: ${sourceText.substring(0, 500)}...` : 'Focus on fundamental Material Science concepts.'}
+      
+      Return ONLY valid JSON in this exact format:
+      {
+        "questions": [
+          {
+            "question": "Clear question text here",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": 0,
+            "explanation": "Detailed explanation here",
+            "difficulty": "medium"
+          }
+        ]
+      }`;
+
+      const response = await this.callClaude(prompt, 3000);
+      const parsed = this.parseJSONResponse(response);
+      
+      return {
+        questions: parsed.questions || [],
+        metadata: {
+          sourceText: sourceText.substring(0, 200) + '...',
+          generatedAt: new Date().toISOString(),
+          totalQuestions: parsed.questions?.length || 0
+        }
+      };
+    } catch (error) {
+      console.error('🚨 Fallback generation also failed:', error);
+      // Only as last resort, generate minimal content programmatically
+      return this.generateMinimalQuiz(questionCount);
+    }
+  }
+
+  private async getFallbackFlashcards(cardCount: number, sourceText: string = ''): Promise<AIGeneratedFlashcards> {
+    console.log('🔄 Fallback: Attempting direct AI flashcard generation...');
+    
+    try {
+      const prompt = `Generate ${cardCount} German Material Science flashcards.
+      ${sourceText ? `Based on: ${sourceText.substring(0, 500)}...` : 'Focus on key Material Science terminology in German.'}
+      
+      Return ONLY valid JSON in this exact format:
+      {
+        "cards": [
+          {
+            "front": "German Term [pronunciation]",
+            "back": "English explanation with context",
+            "category": "Material Science Topic",
+            "difficulty": "medium"
+          }
+        ]
+      }`;
+
+      const response = await this.callClaude(prompt, 3500);
+      const parsed = this.parseJSONResponse(response);
+      
+      return {
+        cards: parsed.cards || [],
+        metadata: {
+          sourceText: sourceText.substring(0, 200) + '...',
+          generatedAt: new Date().toISOString(),
+          totalCards: parsed.cards?.length || 0
+        }
+      };
+    } catch (error) {
+      console.error('🚨 Fallback flashcard generation failed:', error);
+      return this.generateMinimalFlashcards(cardCount);
+    }
+  }
+
+  private async getFallbackExam(questionCount: number, sourceText: string = ''): Promise<AIGeneratedExam> {
+    console.log('🔄 Fallback: Attempting direct AI exam generation...');
+    
+    try {
+      const prompt = `Generate a comprehensive ${questionCount}-question Material Science exam.
+      ${sourceText ? `Based on: ${sourceText.substring(0, 500)}...` : 'Cover fundamental Material Science concepts.'}
+      
+      Return ONLY valid JSON in this exact format:
+      {
+        "questions": [
+          {
+            "question": "Comprehensive question text",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": 0,
+            "points": 10,
+            "type": "multiple_choice",
+            "explanation": "Detailed explanation"
+          }
+        ]
+      }`;
+
+      const response = await this.callClaude(prompt, 4000);
+      const parsed = this.parseJSONResponse(response);
+      const questions = parsed.questions || [];
+      
+      return {
+        questions,
+        metadata: {
+          sourceText: sourceText.substring(0, 200) + '...',
+          generatedAt: new Date().toISOString(),
+          totalQuestions: questions.length,
+          totalPoints: questions.reduce((sum: any, q: any) => sum + (q.points || 10), 0),
+          estimatedDuration: questionCount * 10
+        }
+      };
+    } catch (error) {
+      console.error('🚨 Fallback exam generation failed:', error);
+      return this.generateMinimalExam(questionCount);
+    }
+  }
+
+  // Utility method to parse JSON responses safely
+  private parseJSONResponse(response: string): any {
+    try {
+      // Clean the response by removing markdown code blocks if present
+      const cleanResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      return JSON.parse(cleanResponse);
+    } catch (error) {
+      console.error('Failed to parse JSON response:', error);
+      throw new Error('Invalid JSON response from AI');
+    }
+  }
+
+  // Minimal content generation methods as absolute last resort
+  private generateMinimalQuiz(questionCount: number): AIGeneratedQuiz {
+    console.log('🔧 Generating minimal quiz content programmatically...');
+    
+    const baseQuestions = [
+      {
+        question: "What is the primary mechanism of plastic deformation in metals?",
+        options: ["Vacancy diffusion", "Dislocation motion", "Grain boundary sliding", "Phase transformation"],
+        correctAnswer: 1,
+        explanation: "Plastic deformation in metals occurs primarily through dislocation motion along slip planes.",
+        difficulty: "medium" as const
+      },
+      {
+        question: "Which crystal structure has the highest packing efficiency?",
+        options: ["Simple cubic", "Body-centered cubic", "Face-centered cubic", "Hexagonal close-packed"],
+        correctAnswer: 2,
+        explanation: "FCC and HCP both have packing efficiencies of 74%, which is the highest possible.",
+        difficulty: "hard" as const
+      },
+      {
+        question: "What type of bonding is predominant in ceramic materials?",
+        options: ["Metallic bonding", "Ionic and covalent bonding", "Van der Waals forces", "Hydrogen bonding"],
+        correctAnswer: 1,
+        explanation: "Ceramics are characterized by ionic and/or covalent bonding between atoms.",
+        difficulty: "medium" as const
+      },
+      {
+        question: "Which material property is most affected by grain size?",
+        options: ["Density", "Melting point", "Yield strength", "Thermal conductivity"],
+        correctAnswer: 2,
+        explanation: "According to the Hall-Petch relationship, yield strength increases with decreasing grain size.",
+        difficulty: "hard" as const
+      },
+      {
+        question: "What determines the ductile-to-brittle transition temperature in BCC metals?",
+        options: ["Grain size", "Strain rate", "Crystal structure", "All of the above"],
+        correctAnswer: 3,
+        explanation: "The ductile-to-brittle transition is influenced by multiple factors including grain size and strain rate.",
+        difficulty: "hard" as const
+      }
+    ];
+
+    // Cycle through base questions to reach desired count
+    const questions = [];
+    for (let i = 0; i < questionCount; i++) {
+      questions.push(baseQuestions[i % baseQuestions.length]);
+    }
+
+    return {
+      questions,
+      metadata: {
+        sourceText: 'Programmatically generated content',
+        generatedAt: new Date().toISOString(),
+        totalQuestions: questions.length
+      }
+    };
+  }
+
+  private generateMinimalFlashcards(cardCount: number): AIGeneratedFlashcards {
+    console.log('🔧 Generating minimal flashcard content programmatically...');
+    
+    const baseCards = [
+      { front: "Elastizitätsmodul", back: "Elastic modulus - measure of material stiffness", category: "mechanical_properties", difficulty: "medium" as const },
+      { front: "Versetzung", back: "Dislocation - line defect that enables plastic deformation", category: "crystal_defects", difficulty: "medium" as const },
+      { front: "Korngrenze", back: "Grain boundary - interface between crystal grains", category: "microstructure", difficulty: "easy" as const },
+      { front: "Fließgrenze", back: "Yield strength - stress at which plastic deformation begins", category: "mechanical_properties", difficulty: "medium" as const },
+      { front: "Härte", back: "Hardness - resistance to local plastic deformation", category: "mechanical_properties", difficulty: "easy" as const },
+      { front: "Zähigkeit", back: "Toughness - ability to absorb energy before fracture", category: "mechanical_properties", difficulty: "hard" as const },
+      { front: "Kristallgitter", back: "Crystal lattice - regular 3D arrangement of atoms", category: "crystal_structure", difficulty: "medium" as const },
+      { front: "Legierung", back: "Alloy - mixture of metallic elements", category: "alloys", difficulty: "easy" as const }
+    ];
+
+    // Cycle through base cards to reach desired count
+    const cards = [];
+    for (let i = 0; i < cardCount; i++) {
+      cards.push(baseCards[i % baseCards.length]);
+    }
+
+    return {
+      cards,
+      metadata: {
+        sourceText: 'Programmatically generated content',
+        generatedAt: new Date().toISOString(),
+        totalCards: cards.length
+      }
+    };
+  }
+
+  private generateMinimalExam(questionCount: number): AIGeneratedExam {
+    console.log('🔧 Generating minimal exam content programmatically...');
+    
+    const baseQuestions = [
+      {
+        question: "Derive the relationship between stress and strain for a linear elastic material and explain Young's modulus.",
+        options: ["Essay question - detailed derivation required"],
+        correctAnswer: 0,
+        points: 20,
+        type: "essay" as const,
+        explanation: "This requires understanding of Hooke's law and material stiffness concepts."
+      },
+      {
+        question: "Calculate the critical resolved shear stress for slip if applied stress is 100 MPa at 45° to slip plane.",
+        options: ["35.4 MPa", "50.0 MPa", "70.7 MPa", "100 MPa"],
+        correctAnswer: 2,
+        points: 15,
+        type: "calculation" as const,
+        explanation: "τ = σ × cos(φ) × cos(λ) where φ and λ are angles with slip plane and direction."
+      },
+      {
+        question: "Which phase transformation occurs in steel during rapid cooling (quenching)?",
+        options: ["Austenite to ferrite", "Austenite to martensite", "Ferrite to cementite", "Pearlite to bainite"],
+        correctAnswer: 1,
+        points: 10,
+        type: "multiple_choice" as const,
+        explanation: "Rapid cooling transforms austenite to martensite, a hard but brittle phase."
+      },
+      {
+        question: "What is the driving force for recrystallization in cold-worked metals?",
+        options: ["Temperature gradient", "Stored strain energy", "Chemical potential", "Surface energy"],
+        correctAnswer: 1,
+        points: 10,
+        type: "multiple_choice" as const,
+        explanation: "The stored strain energy from cold working provides the driving force for recrystallization."
+      }
+    ];
+
+    // Cycle through base questions to reach desired count
+    const questions = [];
+    for (let i = 0; i < questionCount; i++) {
+      questions.push(baseQuestions[i % baseQuestions.length]);
+    }
+
+    const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+
+    return {
+      questions,
+      metadata: {
+        sourceText: 'Programmatically generated content',
+        generatedAt: new Date().toISOString(),
+        totalQuestions: questions.length,
+        totalPoints,
+        estimatedDuration: questionCount * 12
+      }
+    };
   }
 }
 

@@ -1,16 +1,22 @@
 
 import React, { useState } from 'react';
-import { ArrowLeft, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Link } from 'react-router-dom';
 import StudyCalendar from '@/components/StudyCalendar';
+import GoogleCalendarSync from '@/components/GoogleCalendarSync';
+import PublicCalendarEmbed from '@/components/PublicCalendarEmbed';
 import { useProgress } from '@/contexts/ProgressContext';
+import { StudyEvent } from '@/lib/googleCalendar';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const { overallProgress, updateProgressFromCalendar } = useProgress();
+  const [studyEvents, setStudyEvents] = useState<StudyEvent[]>([]);
+  const [importedEvents, setImportedEvents] = useState<any[]>([]);
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -46,6 +52,15 @@ const Calendar = () => {
 
   const handleProgressUpdate = (newProgress: number) => {
     updateProgressFromCalendar(newProgress);
+  };
+
+  const handleEventsImported = (events: any[]) => {
+    setImportedEvents(events);
+    console.log(`📥 Imported ${events.length} events from Google Calendar:`, events);
+  };
+
+  const handleStudyEventsUpdate = (events: StudyEvent[]) => {
+    setStudyEvents(events);
   };
 
   return (
@@ -127,12 +142,49 @@ const Calendar = () => {
           </div>
         </div>
 
-        {/* Study Calendar */}
-        <StudyCalendar 
-          currentDate={currentDate}
-          onDateChange={setCurrentDate}
-          onProgressUpdate={handleProgressUpdate}
-        />
+        {/* Calendar Tabs */}
+        <Tabs defaultValue="course" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsTrigger value="course" className="flex items-center space-x-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span>Course Calendar</span>
+            </TabsTrigger>
+            <TabsTrigger value="study" className="flex items-center space-x-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span>Study Schedule</span>
+            </TabsTrigger>
+            <TabsTrigger value="sync" className="flex items-center space-x-2">
+              <CalendarIcon className="h-4 w-4" />
+              <span>Personal Sync</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Course Calendar Tab */}
+          <TabsContent value="course" className="space-y-6">
+            <PublicCalendarEmbed 
+              title="ESSEC Material Science Course Calendar"
+              description="Official course schedule, assignments, and exam dates"
+            />
+          </TabsContent>
+
+          {/* Study Schedule Tab */}
+          <TabsContent value="study" className="space-y-6">
+            <StudyCalendar 
+              currentDate={currentDate}
+              onDateChange={setCurrentDate}
+              onProgressUpdate={handleProgressUpdate}
+              onStudyEventsUpdate={handleStudyEventsUpdate}
+            />
+          </TabsContent>
+
+          {/* Personal Sync Tab */}
+          <TabsContent value="sync" className="space-y-6">
+            <GoogleCalendarSync 
+              studyEvents={studyEvents}
+              onEventsImported={handleEventsImported}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
 
     </div>

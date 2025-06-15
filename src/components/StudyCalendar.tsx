@@ -36,12 +36,20 @@ interface StudyCalendarProps {
   currentDate: Date;
   onDateChange: (date: Date) => void;
   onProgressUpdate: (progress: number) => void;
+  onStudyEventsUpdate?: (events: Array<{
+    date: string;
+    title: string;
+    type: 'quiz' | 'exam' | 'flashcards' | 'study';
+    completed: boolean;
+    description?: string;
+  }>) => void;
 }
 
 const StudyCalendar: React.FC<StudyCalendarProps> = ({ 
   currentDate, 
   onDateChange, 
-  onProgressUpdate 
+  onProgressUpdate,
+  onStudyEventsUpdate 
 }) => {
   const navigate = useNavigate();
   const { setCurrentMaterial } = useMaterials();
@@ -128,13 +136,27 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({
     setWeekSchedule(schedule);
   }, [currentDate]);
 
-  // Calculate weekly progress
+  // Calculate weekly progress and export study events
   useEffect(() => {
     const allActivities = weekSchedule.flatMap(day => day.activities);
     const completedActivities = allActivities.filter(activity => activity.completed);
     const progress = allActivities.length > 0 ? (completedActivities.length / allActivities.length) * 100 : 0;
     onProgressUpdate(progress);
-  }, [weekSchedule, onProgressUpdate]);
+
+    // Export study events for Google Calendar sync
+    if (onStudyEventsUpdate) {
+      const studyEvents = weekSchedule.flatMap(day => 
+        day.activities.map(activity => ({
+          date: day.date.toISOString(),
+          title: `${activity.title} - ${activity.materialTitle}`,
+          type: activity.type,
+          completed: activity.completed,
+          description: `Material Science ${activity.type} session\nMaterial: ${activity.materialTitle}\nDifficulty: ${activity.difficulty}\nDuration: ${activity.duration} minutes`
+        }))
+      );
+      onStudyEventsUpdate(studyEvents);
+    }
+  }, [weekSchedule, onProgressUpdate, onStudyEventsUpdate]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);

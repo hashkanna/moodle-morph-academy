@@ -9,6 +9,7 @@ import MockExamApp from '@/components/MockExamApp';
 import AnkiCardApp from '@/components/AnkiCardApp';
 import ChatApp from '@/components/ChatApp';
 import UserStatsMenu from '@/components/UserStatsMenu';
+import AgentStatus from '@/components/AgentStatus';
 import { useProgress } from '@/contexts/ProgressContext';
 
 const Index = () => {
@@ -116,6 +117,11 @@ const Index = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8 flex-1">
+        {/* AI Agent Status */}
+        <div className="mb-8">
+          <AgentStatus />
+        </div>
+
         {/* Main Apps Grid */}
         <div className="space-y-6">
           {/* Quiz App - Full Width */}
