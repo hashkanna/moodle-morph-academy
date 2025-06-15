@@ -143,23 +143,26 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({
   };
 
   const toggleActivityComplete = (dayIndex: number, activityId: string) => {
-    setWeekSchedule(prev => prev.map((day, index) => {
-      if (index === dayIndex) {
-        return {
-          ...day,
-          activities: day.activities.map(activity => 
-            activity.id === activityId 
-              ? { 
-                  ...activity, 
-                  completed: !activity.completed,
-                  completedAt: !activity.completed ? new Date() : undefined
-                }
-              : activity
-          )
-        };
-      }
-      return day;
-    }));
+    setWeekSchedule(prev => {
+      const newSchedule = prev.map((day, index) => {
+        if (index === dayIndex) {
+          return {
+            ...day,
+            activities: day.activities.map(activity => 
+              activity.id === activityId 
+                ? { 
+                    ...activity, 
+                    completed: !activity.completed,
+                    completedAt: !activity.completed ? new Date() : undefined
+                  }
+                : activity
+            )
+          };
+        }
+        return day;
+      });
+      return newSchedule;
+    });
   };
 
   const handleActivityClick = (activity: StudyActivity) => {
@@ -260,7 +263,7 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({
       </div>
 
       {/* Days of Week Header */}
-      <div className="grid grid-cols-7 border-b border-gray-100">
+      <div className="hidden md:grid grid-cols-7 border-b border-gray-100">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
           <div key={day} className="px-4 py-3 text-center">
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">{day}</div>
@@ -269,7 +272,7 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7">
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-4 md:gap-0">
         {weekSchedule.map((day, dayIndex) => {
           const dayName = day.date.toLocaleDateString('en-US', { weekday: 'short' });
           const dayNumber = day.date.getDate();
@@ -282,20 +285,25 @@ const StudyCalendar: React.FC<StudyCalendarProps> = ({
           return (
             <div
               key={dayIndex}
-              className={`min-h-[160px] border-r border-gray-100 last:border-r-0 p-3 ${
+              className={`min-h-[160px] md:border-r border-gray-100 last:border-r-0 p-3 rounded-lg md:rounded-none ${
                 today ? 'bg-blue-50/50' : 'bg-white hover:bg-gray-50/50'
-              } transition-colors`}
+              } transition-colors border md:border-0`}
             >
               {/* Day Header */}
               <div className="flex items-center justify-between mb-3">
-                <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold
-                  ${today 
-                    ? 'bg-[#0f6cbf] text-white shadow-sm' 
-                    : 'text-gray-700 hover:bg-gray-100'
-                  }
-                `}>
-                  {dayNumber}
+                <div className="flex items-center space-x-2">
+                  <div className={`
+                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold
+                    ${today 
+                      ? 'bg-[#0f6cbf] text-white shadow-sm' 
+                      : 'text-gray-700 hover:bg-gray-100'
+                    }
+                  `}>
+                    {dayNumber}
+                  </div>
+                  <div className="md:hidden text-sm font-medium text-gray-700">
+                    {dayName}
+                  </div>
                 </div>
                 {totalCount > 0 && (
                   <div className="flex items-center space-x-1">

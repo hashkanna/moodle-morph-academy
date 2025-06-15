@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { useMaterials } from '@/contexts/MaterialContext';
 import { useAIGeneration } from '@/hooks/useAIGeneration';
 import { getMockContentForMaterial } from '@/lib/mockContent';
+import { useNavigate } from 'react-router-dom';
 
 interface AnkiCardAppProps {
   isEnabled: boolean;
@@ -15,6 +16,7 @@ interface AnkiCardAppProps {
 }
 
 const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled, autoGenerate }) => {
+  const navigate = useNavigate();
   const [aiCards, setAiCards] = useState<any[]>([]);
   const [currentCard, setCurrentCard] = useState(0);
   const [showBack, setShowBack] = useState(false);
@@ -103,7 +105,7 @@ const AnkiCardApp: React.FC<AnkiCardAppProps> = ({ isEnabled, autoGenerate }) =>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setStudyMode(false)}
+              onClick={() => navigate('/')}
             >
               Exit Study
             </Button>

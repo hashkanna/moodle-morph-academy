@@ -9,11 +9,12 @@ import MockExamApp from '@/components/MockExamApp';
 import AnkiCardApp from '@/components/AnkiCardApp';
 import ChatApp from '@/components/ChatApp';
 import UserStatsMenu from '@/components/UserStatsMenu';
+import { useProgress } from '@/contexts/ProgressContext';
 
 const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [examDate] = useState(new Date('2025-07-15'));
-  const [progress, setProgress] = useState(65);
+  const { overallProgress } = useProgress();
   const [timeLeft, setTimeLeft] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isStatsMenuOpen, setIsStatsMenuOpen] = useState(false);
@@ -107,10 +108,10 @@ const Index = () => {
         {/* Progress Bar - Full Width and Higher */}
         <div className="w-full bg-[#0f6cbf] px-6 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-lg font-medium">Learning Progress</span>
-            <span className="text-lg font-bold">{progress}%</span>
+            <span className="text-lg font-medium">Study Progress</span>
+            <span className="text-lg font-bold">{Math.round(overallProgress)}%</span>
           </div>
-          <Progress value={progress} className="h-6 bg-white/20" />
+          <Progress value={overallProgress} className="h-6 bg-white/20" />
         </div>
       </header>
 
@@ -149,16 +150,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Footer with Progress Bar */}
-      <footer className="bg-[#0f6cbf] text-white shadow-lg mt-auto">
-        <div className="w-full px-6 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-lg font-medium">Overall Learning Progress</span>
-            <span className="text-lg font-bold">{progress}%</span>
-          </div>
-          <Progress value={progress} className="h-6 bg-white/20" />
-        </div>
-      </footer>
 
       {/* User Stats Menu */}
       <UserStatsMenu 

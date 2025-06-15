@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { useMaterials } from '@/contexts/MaterialContext';
 import { useAIGeneration } from '@/hooks/useAIGeneration';
 import { getMockContentForMaterial } from '@/lib/mockContent';
+import { useNavigate } from 'react-router-dom';
 
 interface QuizAppProps {
   isEnabled: boolean;
@@ -15,6 +16,7 @@ interface QuizAppProps {
 }
 
 const QuizApp: React.FC<QuizAppProps> = ({ isEnabled, autoGenerate }) => {
+  const navigate = useNavigate();
   const [generatedQuiz, setGeneratedQuiz] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -34,24 +36,19 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled, autoGenerate }) => {
 
 
   const handleAIQuizGeneration = async () => {
-    console.log('🚀 AI Quiz Generation clicked!');
     const materialInfo = getCurrentMaterialInfo();
-    console.log('📝 Material info:', materialInfo);
     
     if (!materialInfo.material) {
-      console.log('❌ No material selected!');
       return;
     }
 
     try {
-      console.log('🎯 Generating quiz for material:', materialInfo.material.id);
       const result = await generateQuiz(materialInfo.material.id, {
         questionCount: 10,
         difficulty: 'mixed'
       });
       
       if (result) {
-        console.log('✅ Quiz generated, showing questions:', result);
         setGeneratedQuiz(result);
         setCurrentQuestion(0);
         setSelectedAnswer(null);
@@ -61,7 +58,7 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled, autoGenerate }) => {
         setIsComplete(false);
       }
     } catch (error) {
-      console.error('❌ Failed to generate AI quiz:', error);
+      console.error('Failed to generate AI quiz:', error);
     }
   };
 
@@ -219,7 +216,7 @@ const QuizApp: React.FC<QuizAppProps> = ({ isEnabled, autoGenerate }) => {
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={resetQuiz}
+              onClick={() => navigate('/')}
             >
               Exit Quiz
             </Button>

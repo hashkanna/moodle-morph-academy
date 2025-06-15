@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { useMaterials } from '@/contexts/MaterialContext';
 import { useAIGeneration } from '@/hooks/useAIGeneration';
 import { getMockContentForMaterial } from '@/lib/mockContent';
+import { useNavigate } from 'react-router-dom';
 
 interface MockExamAppProps {
   isEnabled: boolean;
@@ -15,6 +16,7 @@ interface MockExamAppProps {
 }
 
 const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled, autoGenerate }) => {
+  const navigate = useNavigate();
   const [aiExam, setAiExam] = useState<any>(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -179,7 +181,7 @@ const MockExamApp: React.FC<MockExamAppProps> = ({ isEnabled, autoGenerate }) =>
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={resetExam}
+                onClick={() => navigate('/')}
               >
                 Exit Exam
               </Button>

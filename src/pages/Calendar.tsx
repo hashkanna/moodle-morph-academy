@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Link } from 'react-router-dom';
 import StudyCalendar from '@/components/StudyCalendar';
+import { useProgress } from '@/contexts/ProgressContext';
 
 const Calendar = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
-  const [progress, setProgress] = useState(0);
+  const { overallProgress, updateProgressFromCalendar } = useProgress();
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
@@ -44,7 +45,7 @@ const Calendar = () => {
   };
 
   const handleProgressUpdate = (newProgress: number) => {
-    setProgress(newProgress);
+    updateProgressFromCalendar(newProgress);
   };
 
   return (
@@ -76,10 +77,10 @@ const Calendar = () => {
         {/* Progress Bar - Full Width and Higher */}
         <div className="w-full bg-[#0f6cbf] px-6 pb-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-lg font-medium">Daily Progress</span>
-            <span className="text-lg font-bold">{Math.round(progress)}%</span>
+            <span className="text-lg font-medium">Study Progress</span>
+            <span className="text-lg font-bold">{Math.round(overallProgress)}%</span>
           </div>
-          <Progress value={progress} className="h-8 bg-white/20" />
+          <Progress value={overallProgress} className="h-8 bg-white/20" />
         </div>
       </header>
 
@@ -134,16 +135,6 @@ const Calendar = () => {
         />
       </div>
 
-      {/* Footer with Progress Bar */}
-      <footer className="bg-[#0f6cbf] text-white shadow-lg mt-auto">
-        <div className="w-full px-6 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-lg font-medium">Overall Daily Progress</span>
-            <span className="text-lg font-bold">{Math.round(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-8 bg-white/20" />
-        </div>
-      </footer>
     </div>
   );
 };
